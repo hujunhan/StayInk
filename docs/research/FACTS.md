@@ -86,7 +86,7 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Evidence: KPM defaults its database to `/mnt/us/kmc/kpm/kpm.db`, packages to `/mnt/us/kmc/kpm/packages`, extracts there, and runs a package's `install.sh` from its extracted directory. KPM's own platform install script separately copies KPM files to `/var/local/kmc`.
 - Verification: inspected the path documentation, build defaults, install flow at lines 603–659, and KPM platform install script at lines 42–50.
 
-## FACT-008 — KPM defines install, launch, and uninstall hooks, not suspend/resume hooks
+## FACT-008 — The reviewed KPM interface defines install, launch, and uninstall hooks
 
 - Classification: FACT
 - Sources: SRC-001, SRC-002, SRC-003
@@ -95,8 +95,8 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Kindle model / firmware: KPM-supported environments / UNKNOWN
 - Confidence: high for the reviewed KPM interface
 - Relevance: packaging lifecycle must not be confused with the Kindle power lifecycle.
-- Evidence: the reviewed interface invokes `install.sh` after extraction, `launch.sh` on explicit launch, and `uninstall.sh` before deletion. No power-event or background-service hook is defined in those interfaces.
-- Verification: inspected implementation, documentation, and example. This does not prove that no separate background mechanism exists elsewhere.
+- Evidence: the reviewed interface invokes `install.sh` after extraction, `launch.sh` on explicit launch, and `uninstall.sh` before deletion. No power-event or background-service hook was found in those interfaces.
+- Verification: inspected implementation, documentation, and example. The negative finding is limited to those reviewed interfaces; it does not prove that no separate background mechanism exists elsewhere.
 
 ## FACT-009 — KindleModding package guidance forbids rootfs writes by hooks
 
@@ -128,7 +128,7 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Source: SRC-008
 - Repository / commit: issue evidence / NOT APPLICABLE
 - Evidence location: issue 15757 body and comments
-- Kindle model / firmware: Scribe 2022 at 5.19.4 and 5.18.3; another first-generation report at 5.17.2
+- Kindle model / firmware: Scribe 2022 at 5.19.4 and 5.18.3; one commenter self-described a “Kindle Scribe gen 1 (2024)” at 5.17.2
 - Confidence: medium
 - Relevance: wake-time display operations on Scribe are a concrete compatibility risk for any intervention.
 - Evidence: reporters describe left-side corruption appearing as the wake dialog is cleared after a long sleep; a full refresh or another sleep/wake removes it. Short sleeps reportedly do not reproduce it.

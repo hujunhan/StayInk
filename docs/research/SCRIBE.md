@@ -15,8 +15,8 @@ Classification: FACT — FACT-003, FACT-011
 | Model | Firmware | Environment | Narrow observation | Applicability |
 | --- | --- | --- | --- | --- |
 | Scribe 2022 | 5.19.4 | KOReader 2026.07 | attached log separates screensaver entry, readiness callbacks, wake, and `outOfScreenSaver`; reporter observes corruption after long sleeps | confirmed for that report, not stock UI |
-| Scribe 2022 | 5.18.3 | KOReader 2026.07 | another user reports similar long-sleep wake corruption | user report only |
-| Scribe gen 1 | 5.17.2 | KOReader 2026.07 | another user reports the issue | user report only |
+| Scribe 2022 | 5.18.3 | KOReader, version unstated | another user reports similar long-sleep wake corruption | user report only |
+| “Kindle Scribe gen 1 (2024),” as self-described | 5.17.2 | KOReader, version unstated | another user reports the issue | user report only; model wording is ambiguous |
 | Scribe 2022 | 5.17.3 | modified stock screensaver resources | lock continued while the current screen stayed visible when resource selection failed | unsafe, rootfs-modified case; suspend unmeasured |
 
 The final row from SRC-009 demonstrates only that lock and visible replacement diverged on one modified device. It is not a safe recipe and does not prove genuine suspend.

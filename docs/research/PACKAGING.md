@@ -26,6 +26,6 @@ KPM itself has platform components under `/var/local/kmc`, while its reviewed de
 
 Classification: UNKNOWN
 
-The reviewed KPM interface does not define boot, suspend, resume, or long-running-service hooks. Scriptlets provide a user launch surface; they are not evidence of an automatic background lifecycle. The KindleModding boot-process page describes Upstart on Paperwhite 6 only, so it cannot establish a Scribe service model.
+No boot, suspend, resume, or long-running-service hooks were found in the reviewed KPM interfaces. Scriptlets provide a user launch surface; they are not evidence of an automatic background lifecycle. The KindleModding boot-process page describes Upstart on Paperwhite 6 only, so it cannot establish a Scribe service model.
 
 No daemon or service architecture is proposed. Packaging is deferred until research establishes whether a future mechanism needs background presence at all and, if so, how it can start and stop without rootfs changes and with an explicit uninstall path.

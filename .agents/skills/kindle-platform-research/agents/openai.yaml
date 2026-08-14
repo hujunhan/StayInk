@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kindle Platform Research"
+  short_description: "Trace and validate Kindle platform behavior"
+  default_prompt: "Use $kindle-platform-research to investigate a Kindle internals question with pinned-source evidence."

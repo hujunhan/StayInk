@@ -18,6 +18,8 @@
 
 - Label claims as **FACT**, **INFERENCE**, or **UNKNOWN**. Cite Kindle-internals sources where possible.
 - Record the source repository, commit SHA, code location, device model, firmware, confidence, and StayInk relevance using `docs/research/`.
+- Treat event names, log labels, and third-party terminology as observations, not proof of stock component ownership or low-power residency.
+- Scope negative findings to what was reviewed; do not turn “not found” into “does not exist.”
 - Do not copy GPL or AGPL source into StayInk.
 - Use external implementations only to understand behavior and architecture unless license compatibility has been explicitly verified.
 

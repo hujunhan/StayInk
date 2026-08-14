@@ -74,7 +74,7 @@
 
 - Classification: UNKNOWN
 - Sources: SRC-004, SRC-005, SRC-008, SRC-009
-- Model / firmware: Scribe generations 1–3 and variants / all relevant releases
+- Model / firmware: each community-mapped Scribe device set and variant / all relevant releases
 - Confidence: high
 - Relevance: support cannot be inferred across devices or releases.
 - Current evidence: community model tables differ by generation; issue evidence spans 5.17.2–5.19.4 but remains KOReader-specific; stock passcode and Special Offers paths are not characterized.
