@@ -1,29 +1,19 @@
 # Research Records
 
-This directory keeps StayInk research evidence separate from conclusions and open questions.
+This directory keeps evidence separate from interpretations and open questions.
 
-- `SOURCES.md` registers exact source revisions.
-- `FACTS.md` records directly supported observations.
-- `HYPOTHESES.md` records testable explanations or proposed behavior.
-- `UNKNOWNS.md` records unresolved questions that affect the project.
+- `SOURCES.md` pins source revisions and records source limitations.
+- `FACTS.md` is the canonical ledger for directly supported observations.
+- `POWER.md`, `DISPLAY.md`, `PACKAGING.md`, and `SCRIBE.md` synthesize facts by research question.
+- `HYPOTHESES.md` ranks testable candidate mechanisms.
+- `UNKNOWNS.md` records unresolved questions.
 
 ## Classification
 
-- **FACT:** directly supported by a cited source or repeatable observation, within the recorded device and firmware scope.
-- **INFERENCE:** a reasoned interpretation that goes beyond direct evidence. Record it as a hypothesis.
-- **UNKNOWN:** missing or conflicting knowledge. Do not silently fill it with an assumption.
+- **FACT:** directly supported by a cited source or observation, only within its stated scope.
+- **INFERENCE:** a reasoned conclusion that goes beyond direct evidence.
+- **UNKNOWN:** missing, conflicting, or unverified knowledge.
 
-## Required metadata
+Each important entry records a stable ID, source and revision, evidence location, model and firmware scope, confidence, and StayInk relevance. `UNKNOWN` is a valid value. A project source establishes what that project implements or assumes; it does not automatically establish stock Kindle or Scribe behavior.
 
-Every research entry must include:
-
-- a stable record ID;
-- source ID and repository;
-- exact commit SHA;
-- file, function, symbol, path, or document section;
-- Kindle model and firmware when known;
-- confidence (`high`, `medium`, or `low`);
-- relevance to StayInk;
-- enough evidence or reasoning to audit the claim.
-
-Write `UNKNOWN` when metadata cannot be established. Keep claims narrow enough that their cited evidence supports them. Use `.research/repos/` only for local, unmodified reference checkouts; do not copy third-party code into StayInk.
+Issue reports and web pages are mutable. Cite their URL and retrieval date instead of inventing a commit SHA. Keep third-party repositories unmodified under `.research/repos/`; never copy their source into StayInk.
