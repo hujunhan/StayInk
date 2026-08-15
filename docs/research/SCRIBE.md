@@ -79,3 +79,25 @@ Existing kernel messages record complete `mem` suspend/resume transactions on th
 Phase 2A established the target identity available from the UI/kernel, firmware, privileges, mounts, installed observation tools, power/display/input/log interfaces, candidate publisher owners, and available kernel suspend evidence. The initially incomplete process inventory was closed by the targeted PID-to-procfs observation in FACT-013.
 
 Phase 2A did not trace a controlled power-button transition, timestamp the visible replacement, attribute a framebuffer write or panel refresh, compare framebuffer and panel contents across suspend, measure current draw, or test a wake path. Those remain separate Phase 2B/2C design questions. No additional Phase 2A device commands are authorized or needed.
+
+## Phase 2B Baseline A — KOReader / current observed environment — COMPLETE
+
+Classification: FACT — FACT-015, OBS-002
+
+The controlled firmware 5.19.5 trial with KOReader active recorded this software/kernel order:
+
+```text
+goingToScreenSaver 2
+  -> repeated readyToSuspend payloads
+  -> kernel mem suspend entry
+  -> kernel suspend exit
+  -> wakeupFromSuspend 83
+  -> outOfScreenSaver 1
+  -> exitingScreenSaver
+```
+
+The suspend-success counter increased from 76 to 77 with no observed failure, and the kernel reported `Suspended for 82.711 seconds`. The first readiness event was about 60.009 seconds after `goingToScreenSaver`; the final readiness event was about 10.164 seconds before kernel entry.
+
+The separate phone-video timeline recorded the physical button at 1.67 seconds, illumination dimming at 2.05 seconds, and a black/white flash with the KOReader sleeping box at 2.10 seconds. No shared synchronization marker aligns the video and listener clocks, so the visual replacement must not be placed relative to `goingToScreenSaver`. Wake visual times were unavailable and remain UNKNOWN; no repeat is required solely for those fields.
+
+This accepted trial is successful software/kernel evidence for KOReader on this target, not a pure-stock baseline. It does not attribute stock rendering or panel-refresh ownership, establish stock replacement timing, compare framebuffer and panel persistence, or measure electrical low-power depth.

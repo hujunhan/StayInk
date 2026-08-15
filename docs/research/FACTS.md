@@ -182,3 +182,31 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Relevance: establishes an available kernel-level suspend oracle that is independent of screensaver and powerd event terminology.
 - Evidence: captured sequences include `PM: suspend entry`, `Preparing system for sleep (mem)`, `Suspending system (mem)`, completed device/noirq suspend phases, a platform-reported suspended duration, completed resume phases, and `PM: suspend exit`.
 - Verification: read pre-existing messages only; no suspend was requested by the probe. These lines establish kernel `mem` suspend/resume handling, but do not measure current draw, identify the lowest hardware residency state, or show that the current display survived unchanged.
+
+## FACT-015 — A controlled KOReader trial orders powerd events around a kernel `mem` transaction
+
+- Classification: FACT
+- Source: OBS-002
+- Repository / commit: NOT APPLICABLE; direct target-device observation
+- Evidence location: accepted Baseline A record in `docs/research/POWER_TRACE.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5; Linux `4.9.77-lab126`
+- Environment: Véra/KPM with KOReader active and its `com.github.koreader.kindlepowerd` publisher present; not a pure-stock baseline
+- Confidence: high for the observed event/kernel order and successful kernel transaction; low for undocumented event-payload semantics and electrical low-power depth
+- Relevance: establishes a target-specific pre-suspend event window and independent kernel transition evidence without changing power, display, service, or tracing state.
+- Evidence:
+
+| Marker | Observed local wall-clock-like time |
+| --- | --- |
+| `goingToScreenSaver 2` | 20:06:34.131585 |
+| first `readyToSuspend 10` | 20:07:34.140377 |
+| final `readyToSuspend 1` | 20:08:19.196563 |
+| kernel `mem` suspend entry | 20:08:29.360989 |
+| kernel suspend exit | 20:09:52.350269 |
+| `wakeupFromSuspend 83` | 20:09:52.369737 |
+| `outOfScreenSaver 1` | 20:09:52.550583 |
+| `exitingScreenSaver` | 20:09:52.968467 |
+
+- Kernel corroboration: `/sys/kernel/debug/suspend_stats` success changed from 76 to 77, all observed failure fields remained zero, and the kernel reported `Suspended for 82.711 seconds`.
+- Visual record: the physical button press occurred at video 1.67 seconds, illumination darkened at 2.05 seconds (+0.38), and a black/white flash with the KOReader sleeping box appeared at 2.10 seconds (+0.43).
+- Timestamp scope: the listener prefixes behaved like local wall time and had an observed UTC−07:00 relationship to adjacent UTC markers. No shared synchronization marker connected the phone-video clock to the listener clock, so the visual sequence cannot be aligned with `goingToScreenSaver`.
+- Interpretation limits: repeated `readyToSuspend` payloads may reflect a countdown or readiness/defer process, but their precise semantics are UNKNOWN. Payload 83 is consistent with the 82.711-second kernel-reported suspended interval, but its formal definition is UNKNOWN. Physical wake and restored-UI video times are UNKNOWN. The trial does not identify a renderer, framebuffer writer, panel-refresh owner, stock Amazon timing, electrical current, or lowest hardware residency depth.

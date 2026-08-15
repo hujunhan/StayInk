@@ -119,3 +119,15 @@ Repository evidence is pinned to a full commit SHA. Web and issue evidence is mu
 - License: NOT APPLICABLE to owner-supplied observations
 - Relevance: establishes the actual target environment, candidate D-Bus publisher owners, and available kernel suspend evidence before Phase 2B design.
 - Limitations: point-in-time snapshots from one Scribe on one firmware; the Scribe generation remains unknown; raw output is not committed because it included a device serial; the active KOReader publisher means this was not a pure stock baseline; no controlled display/event trace or external power measurement was performed.
+
+## OBS-002 — Phase 2B Baseline A controlled KOReader trace
+
+- Source: direct, manually captured target-device commands and external phone-video observations supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: Véra/KPM with KOReader active and its `com.github.koreader.kindlepowerd` publisher present; SSH-hosted read-only listener; not a pure-stock baseline
+- Evidence location: accepted execution record in `docs/research/POWER_TRACE.md`; distilled as FACT-015
+- License: NOT APPLICABLE to owner-supplied observations
+- Relevance: correlates selected powerd events with an independently recorded kernel `mem` suspend/resume transaction and records the separate KOReader visual transition.
+- Limitations: the phone video had no shared synchronization marker with the listener clock; physical wake/restored-UI times were unavailable; the active KOReader UI/publisher and SSH observer may affect timing; no framebuffer access or electrical measurement was performed; the listener's local wall-clock-like timestamp behavior is scoped to this target/trial and is not generalized to other versions.

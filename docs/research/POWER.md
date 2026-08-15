@@ -8,9 +8,9 @@ The internal stock state machine remains UNKNOWN. The smallest model supported b
 sleep request
   -> goingToScreenSaver(source)
   -> [display replacement timing and actor UNKNOWN]
-  -> readyToSuspend(delay), possibly repeated
+  -> readyToSuspend(payload), possibly repeated
   -> [actual power state and depth not independently measured]
-  -> wakeupFromSuspend(elapsed)
+  -> wakeupFromSuspend(payload)
   -> outOfScreenSaver(source), for a user-visible exit
 ```
 
@@ -46,7 +46,17 @@ Classification: FACT — FACT-014
 
 On the observed Scribe running firmware 5.19.5, existing kernel-ring-buffer sequences contain `PM: suspend entry`, preparation and system suspension for `mem`, completed device/noirq phases, a platform-reported suspended duration, completed resume phases, and `PM: suspend exit`. This is direct evidence of kernel system suspend/resume handling and is stronger than screensaver state or a powerd event name.
 
-The observation does not measure current draw or identify the lowest hardware residency depth. KOReader's `com.github.koreader.kindlepowerd` publisher was active during Phase 2A, so the environment is not a pure stock baseline. A later controlled trial still needs an external power measurement if StayInk is to claim genuine low-power behavior equivalent to control.
+The observation does not measure current draw or identify the lowest hardware residency depth. KOReader's `com.github.koreader.kindlepowerd` publisher was active during Phase 2A, so the environment is not a pure stock baseline. Any future claim of genuine low-power behavior equivalent to a control still needs an external power measurement.
+
+### A controlled target trial orders powerd events around kernel suspend
+
+Classification: FACT — FACT-015
+
+Baseline A on the target Scribe running firmware 5.19.5, with KOReader active, observed `goingToScreenSaver 2`, repeated `readyToSuspend` events, kernel `mem` suspend entry, kernel suspend exit, `wakeupFromSuspend 83`, `outOfScreenSaver 1`, and `exitingScreenSaver` in that order. The suspend-success counter increased from 76 to 77, all observed failure fields remained zero, and the kernel reported an 82.711-second suspended interval.
+
+The first observed readiness event followed screen-saver entry by about 60.009 seconds; the final observed readiness event preceded kernel entry by about 10.164 seconds. The repeated payload sequence may be a countdown or readiness/defer process, but its precise semantics are UNKNOWN. The wake payload 83 is consistent with the kernel-reported 82.711 seconds, but its formal definition is UNKNOWN.
+
+The listener timestamp prefixes behaved like local wall time with an observed UTC−07:00 relation to adjacent UTC markers. This is target/trial evidence, not a universal definition of `lipc-wait-event -t`. The independent video recorded the KOReader sleeping box 0.43 seconds after the physical button, but no shared synchronization marker aligns that visual clock with `goingToScreenSaver`.
 
 ## Current synthesis
 
@@ -54,7 +64,7 @@ The observation does not measure current draw or identify the lowest hardware re
 
 Classification: INFERENCE
 
-Because KOReader receives different events and performs its own screen-saver work on `goingToScreenSaver`, the project should investigate the interval before `readyToSuspend` rather than altering the sleep request itself. This does not show when the stock renderer draws, whether it blocks readiness, or whether the events are contractual.
+Because KOReader receives different events and performs its own screen-saver work on `goingToScreenSaver`, the project should investigate the interval before kernel suspend rather than altering the sleep request itself. FACT-015 confirms a target-specific software interval in KOReader, including repeated readiness events, but does not synchronize the visible update to those events or show when the stock renderer draws, whether it blocks readiness, or whether the events are contractual.
 
 The wake-while-`screenSaver` sequences are consistent with a background wake followed by resuspend. Their cause is not directly demonstrated, so this remains an inference and a test case rather than a fact about every wake.
 
