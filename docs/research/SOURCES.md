@@ -131,3 +131,39 @@ Repository evidence is pinned to a full commit SHA. Web and issue evidence is mu
 - License: NOT APPLICABLE to owner-supplied observations
 - Relevance: correlates selected powerd events with an independently recorded kernel `mem` suspend/resume transaction and records the separate KOReader visual transition.
 - Limitations: the phone video had no shared synchronization marker with the listener clock; physical wake/restored-UI times were unavailable; the active KOReader UI/publisher and SSH observer may affect timing; no framebuffer access or electrical measurement was performed; the listener's local wall-clock-like timestamp behavior is scoped to this target/trial and is not generalized to other versions.
+
+## OBS-003 — Phase 2B Baseline B revision 1 observer gate failure
+
+- Source: direct target-device output supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: Véra/KPM with KOReader and its SSH transport active during observer setup; Baseline B had not started
+- Evidence location: revision 1 gate result in `docs/research/POWER_TRACE.md`
+- License: NOT APPLICABLE to owner-supplied observations
+- Relevance: establishes that `mkfifo` at `/mnt/us/stayink-observation/baseline-b/events.pipe` returned `Operation not permitted`, invalidating the FIFO-based local observer before any stock Notebook trial.
+- Limitations: establishes rejection of that exact FIFO creation on this target and environment only; it does not characterize all filesystems or FIFO implementations. The observer exited before creating listener/timer PID files, so no powerd event stream or Baseline B suspend cycle was captured.
+
+## OBS-004 — Phase 2B Baseline B revision 2 stock-Notebook attempt
+
+- Source: direct target-device output and external phone-video observations supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: Véra/KPM; observer launched through KOReader SSH and reported stock Kindle Notebook foreground after ordinary KOReader exit; not a proven pure-stock boot
+- Evidence location: revision 2 trial result in `docs/research/POWER_TRACE.md`; distilled as FACT-016
+- License: NOT APPLICABLE to owner-supplied observations
+- Relevance: validates detached local event capture and records a stock-Notebook visual replacement plus two powerd screensaver episodes without continuous SSH.
+- Limitations: no kernel `mem` suspend occurred during the observer window; the 360-second timer ended during repeated `readyToSuspend 10` events; no shared marker aligns the phone-video clock with either software episode; the cause of the first episode and the reason for the second episode's defer state are UNKNOWN; the pre/post suspend-counter interval included an earlier uncontrolled kernel transaction.
+
+## OBS-005 — Phase 2B Baseline B revision 2 attempt 2
+
+- Source: direct target-device output supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: Véra/KPM; observer launched through KOReader SSH and reported stock Kindle Notebook foreground after ordinary KOReader exit; not a proven pure-stock boot
+- Evidence location: revision 2 attempt 2 record in `docs/research/POWER_TRACE.md`; distilled as FACT-017
+- License: NOT APPLICABLE to owner-supplied observations
+- Relevance: captures selected powerd events around a genuine kernel `mem` transaction without continuous SSH and empirically characterizes the one-shot timer across suspend.
+- Limitations: the execution occurred after the prior decision gate said not to repeat revision 2 unchanged; no phone-video or shared synchronization marker was supplied for this attempt; no immediately preceding suspend-statistics snapshot was supplied; event payload definitions, renderer ownership, panel-refresh ownership, framebuffer retention, electrical low-power depth, and pure-stock applicability remain UNKNOWN.

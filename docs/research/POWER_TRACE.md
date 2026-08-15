@@ -1,6 +1,6 @@
 # Kindle Scribe Phase 2B Power-Transition Trace Specification
 
-Status: COMPLETE; Baseline A accepted as successful software/kernel evidence
+Status: Baseline A COMPLETE; Baseline B attempt 2 accepted as successful software/kernel evidence in the reported stock-Notebook foreground condition; synchronized visual evidence remains UNKNOWN
 Designed: 2026-08-14; executed: 2026-08-15 UTC
 Target: UI-identified Kindle Scribe, generation **UNKNOWN**, firmware 5.19.5
 Environment: Véra/KPM with KOReader's `com.github.koreader.kindlepowerd` publisher active
@@ -21,9 +21,9 @@ Important evidence labels:
 
 ## Safety classification
 
-Only the exact commands classified **READ_ONLY** in this document are proposed. Here, READ_ONLY means the command has no property-set, file-write, log-clear, trace-enable, suspend, input, framebuffer, or service-control operation. It can still create observer effects: the shell and listener consume CPU and memory, create a transient D-Bus subscription, may generate ordinary session/audit records, and—when carried over SSH—keep a network connection present.
+For Baseline A, only the exact commands classified **READ_ONLY** in its procedure were proposed. Here, READ_ONLY means the command has no property-set, file-write, log-clear, trace-enable, suspend, input, framebuffer, or service-control operation. It can still create observer effects: the shell and listener consume CPU and memory, create a transient D-Bus subscription, may generate ordinary session/audit records, and—when carried over SSH—keep a network connection present.
 
-No command below is **UNCERTAIN** or **STATE_CHANGING**. If the target rejects an option, requests configuration, or behaves differently from the reviewed form, record the error and stop; do not improvise a replacement.
+Baseline B necessarily adds temporary **STATE_CHANGING** operations confined to `/mnt/us/stayink-observation/` plus narrowly targeted signals to processes created by the observer itself. Its separate command review and stop gate appear below. No command classified **UNCERTAIN** is approved. If the target rejects an option, requests configuration, or behaves differently from the reviewed form, record the error and stop; do not improvise a replacement.
 
 ## Evidence for the narrow LIPC observer
 
@@ -322,3 +322,478 @@ If the device fails to wake normally, do not issue experimental shell commands o
 ## Decision gate
 
 Phase 2B Baseline A is complete and accepted as successful software/kernel evidence. CONTROL 0 and CONTROL 1 used only the manually audited READ_ONLY command set and normal physical button actions; no tracing, framebuffer access, executable probe, or StayInk intervention was used. The result remains explicitly scoped to KOReader on this Scribe 5.19.5 environment and to a potentially suspend-perturbing SSH observer. Stock replacement timing, display ownership, electrical low-power depth, synchronized visual-to-event timing, and wake visuals remain outside what this trial proves.
+
+## Baseline B temporary-observer design — stock Notebook foreground
+
+Status: Revision 1 failed before observation; revision 2 attempt 1 was inconclusive; supplied attempt 2 captured successful software/kernel evidence
+
+Trial label if the human gate passes: **Baseline B — stock Notebook foreground after ordinary KOReader exit**
+
+This is not a proven pure-stock baseline. The observer is launched from KOReader-provided SSH, third-party software remains installed, and the absence of KOReader's publisher during the observation window cannot be established by the observer proposed here. The intended condition is only that the user exits KOReader through its normal UI and places an existing, non-sensitive stock Kindle Notebook in the foreground before the physical sleep request. Do not create or edit notebook content for this trial.
+
+### Revision 1 gate result
+
+Classification: FACT — OBS-003
+
+At `2026-08-15T03:52:09Z`, the revision 1 supervisor on this UI-identified Kindle Scribe running firmware 5.19.5 reported:
+
+```text
+mkfifo: /mnt/us/stayink-observation/baseline-b/events.pipe: Operation not permitted
+```
+
+`observer.pid` was written, the detached job exited, and neither `listener.pid` nor `timer.pid` was created. The required gate therefore failed before KOReader exit, before a powerd subscription was launched, and before any Notebook sleep/wake observation. The PRE suspend-success count of 78 is not a Baseline B result.
+
+**FACT:** FIFO creation at that exact `/mnt/us` path was rejected on the observed target and environment.
+
+**UNKNOWN:** Whether every path or FIFO implementation on this firmware would behave identically. No broader filesystem claim is made, and no additional location will be tried because observer output is restricted to `/mnt/us/stayink-observation/`.
+
+The original validation loop also failed to guard empty PID files. Empty expansions caused unintended reads of `/proc/cmdline` and `/proc/stat`. Those reads were non-mutating, but revision 2 rejects missing, empty, or non-numeric PIDs before constructing a `/proc/<PID>` path.
+
+### Narrow source validation and residual uncertainty
+
+**FACT:** SRC-004 at commit `2d505d1ea32ac875c18ed07b07d8bef78ae6954c`, `plugins/SSH.koplugin/main.lua` lines 45–56, launches Dropbear with a PID file. Lines 108–147 implement shutdown by sending `TERM`, and optionally `KILL`, to processes whose immediate parent is the recorded Dropbear PID and then to Dropbear itself. Lines 167–193 say active connections may remain without force-close and show a Dropbear-only last-resort kill. Lines 327–335 describe the force-close setting as terminating active SSH sessions. This is evidence about the pinned KOReader implementation, not proof of the exact target package's complete descendant-cleanup behavior.
+
+**FACT:** The same source lines 64–71 and 150–158 show that starting and stopping KOReader SSH changes firewall rules. Baseline B does not start, stop, reconfigure, or otherwise control that service; it uses the already-running connection and then the user's ordinary KOReader UI exit.
+
+**INFERENCE:** A process launched with a new session/process group, no controlling terminal, ignored `SIGHUP`, and all standard streams redirected should survive ordinary terminal hangup and the immediate-child signaling visible in the pinned plugin.
+
+**UNKNOWN:** Whether the target's packaged plugin, launcher, or another supervisor performs broader process-tree or cgroup cleanup when KOReader exits. Therefore successful detachment is a pre-exit experimental gate, not an assumption. If the observer nevertheless dies on ordinary KOReader exit, Baseline B fails safely and no timing conclusion follows.
+
+### Why `nohup`, `setsid`, and a local timer are combined
+
+- `nohup` establishes ignored `SIGHUP` before executing the observer. It does not create a new session, process group, or detach a controlling terminal, so it is insufficient by itself.
+- `setsid` requests a new session and process group with no controlling terminal. It does not by itself protect against an explicit `SIGHUP`, so it is insufficient by itself.
+- stdin is `/dev/null`; stdout and stderr are explicitly redirected under the run directory. This prevents terminal reads and prevents creation of a default `nohup.out` elsewhere.
+- The observer writes its own PID after `setsid`, because the launching shell's `$!` may identify an intermediate implementation process if `setsid` forks.
+- An external `timeout` wrapper is not approved. Availability and option/signal-forwarding behavior have not been demonstrated on this target, and different BusyBox/coreutils versions do not justify assuming equivalent child handling. The preflight may report whether it exists, but the design does not execute it.
+- Revision 1 attempted event-driven termination through a FIFO under `/mnt/us`; OBS-003 disproved that mechanism on this target. Revision 2 writes listener output directly to `events.log` and uses one `/bin/sleep 360` child as its sole automatic termination trigger. It uses no polling loop, FIFO, `tail`, or wake-capable alarm.
+
+**UNKNOWN:** Which clock the target's `/bin/sleep` ultimately uses and whether elapsed suspend time advances it. The 360-second bound is therefore a runnable-time bound, not a guaranteed 360 seconds of external wall time across kernel suspend. While the kernel is suspended no userspace cleanup can execute. After a normal wake, the remaining timer interval completes and stops the listener.
+
+### Exact proposed sequence
+
+1. Start continuous phone video. Record firmware, battery/charging, Wi-Fi, orientation, passcode, cover state, the Baseline B label, and a non-sensitive existing Notebook chosen in advance. Do not open or edit that Notebook yet.
+2. While the already-running KOReader SSH session is available, run the availability preflight. Stop if `nohup`, `setsid`, `awk`, `grep`, `sed`, `tr`, or `readlink` is absent, or if any of the three exact executable paths fails its check. `timeout` is informational only. Do not retry `mkfifo`.
+3. Create the fixed output directory. It must be empty. If it is not empty, stop and review it; do not overwrite or broadly remove anything.
+4. Create and inspect the one-shot observer exactly as below. It is an experiment artifact under `/mnt/us`, not an installed daemon or reusable startup component.
+5. Capture the PRE UTC marker, suspend statistics, and filtered existing kernel PM messages in the SSH transcript.
+6. Launch the observer with `nohup` and `setsid`, then run the targeted detachment check. A human must confirm the observer has its own session/process group, `tty_nr=0`, ignored `SIGHUP`, expected executable/command lines, and only the recorded PIDs were inspected. If any condition is unclear, run the targeted abort and stop before exiting KOReader.
+7. Keep the video continuous. Exit KOReader through its ordinary user-facing UI, navigate normally to the preselected stock Notebook without editing it, and show the stable page for at least five seconds.
+8. Press the physical power button once. Record illumination change, first E-Ink activity, replacement completion, and stable sleep image. Wait at least 180 seconds after the stable sleep image so the approximately minute-scale readiness sequence observed in Baseline A has room to reach kernel suspend; this interval is not itself suspend evidence.
+9. Press the physical power button once to wake. Record first visible wake activity, the protected UI, and restoration of the stock Notebook after a privacy-safe unlock. Stop if wake or UI restoration is abnormal.
+10. Keep the stock UI stable for at least five seconds after restoration. Revision 2 deliberately does not react to event-file contents. Its single timer stops the listener after 360 target-runnable seconds from observer launch.
+11. After the controlled cycle and visual recording are complete, reopen KOReader normally to regain its existing SSH transport. This post-cycle action is outside the evidence window. Do not use network loss or reconnection as a suspend oracle. If the timer has not completed, leave the session idle until `done` appears; do not shorten it with an improvised signal.
+12. Run the targeted completion check only after `done` exists, then take the POST kernel snapshots. Copy the entire run directory and phone video to the development machine. Preserve raw output and redact only the shared copy.
+13. After the copy is verified and every recorded observer PID is gone or belongs to an unrelated reused PID, run the exact cleanup commands.
+
+### Availability preflight
+
+```sh
+for c in nohup setsid awk grep sed tr readlink; do
+    printf '%s: ' "$c"
+    command -v "$c" || printf 'NOT FOUND\n'
+done
+printf 'timeout (informational, not used): '
+command -v timeout || printf 'NOT FOUND\n'
+for p in /bin/sh /bin/sleep /usr/bin/lipc-wait-event; do
+    if [ -x "$p" ]; then
+        printf '%s: executable\n' "$p"
+    else
+        printf '%s: NOT EXECUTABLE\n' "$p"
+    fi
+done
+```
+
+**SAFETY CLASSIFICATION:** READ_ONLY.
+
+This resolves command availability only. It does not execute `timeout`, subscribe to events, alter the filesystem, enumerate processes, or prove detachment behavior.
+
+### Command classification summary
+
+| Exact operation | Classification | Basis |
+| --- | --- | --- |
+| availability preflight; PRE/POST `date`, `cat`, `dmesg`, and `grep`; fixed-PID `/proc` reads; artifact reads | READ_ONLY | Reads command/path availability or already-existing metadata and logs; no setting, clearing, broad process enumeration, or device write. |
+| narrow `/usr/bin/lipc-wait-event ...` invocation by itself | READ_ONLY | Same already-approved subscription-only publisher/event form used in Baseline A. |
+| `umask`, fixed-directory `mkdir`, heredoc creation, `chmod`, and output creation/redirection | STATE_CHANGING | Creates only temporary regular-file artifacts below `/mnt/us/stayink-observation/baseline-b/`; no rootfs or startup path. |
+| `nohup setsid /bin/sh ... &` supervisor launch and `/bin/sleep 360` timer | STATE_CHANGING | Creates bounded transient processes and a D-Bus observer; it does not control a service or request a power transition. |
+| identity-checked `kill -INT` of the listener and `kill -TERM` of the timer's own sleep child | STATE_CHANGING | Signals only PIDs created and recorded by this observer; no stock, KOReader, or Amazon service PID is targeted. |
+| exact-file `rm -f` and empty-directory `rmdir` cleanup | STATE_CHANGING | Irreversibly deletes only enumerated temporary artifacts after copy and PID verification. |
+| external `timeout` execution or any workaround not shown here | UNCERTAIN | Not approved because target implementation and signal-forwarding semantics were not established. |
+
+No command classified UNCERTAIN is part of the executable sequence.
+
+### Prepare the empty run directory
+
+```sh
+OBS=/mnt/us/stayink-observation
+RUN="$OBS/baseline-b"
+umask 077
+mkdir -p "$RUN"
+ls -la "$RUN"
+```
+
+**SAFETY CLASSIFICATION:** STATE_CHANGING.
+
+`mkdir -p` may create only the two named directories under `/mnt/us`; `umask` affects only files subsequently created by this shell; `ls` is read-only. Proceed only if `baseline-b` is empty. No root-filesystem path, mount, service, or persistent startup location is touched.
+
+### One-shot observer content
+
+```sh
+cat > "$RUN/observer.sh" <<'EOF'
+#!/bin/sh
+
+RUN=/mnt/us/stayink-observation/baseline-b
+LISTENER_PID=
+TIMER_PID=
+
+umask 077
+date -u '+%Y-%m-%dT%H:%M:%SZ' > "$RUN/start.utc"
+printf '%s\n' "$$" > "$RUN/observer.pid"
+: > "$RUN/events.log"
+
+/usr/bin/lipc-wait-event -m -s 0 -t com.lab126.powerd goingToScreenSaver,outOfScreenSaver,exitingScreenSaver,readyToSuspend,wakeupFromSuspend \
+    > "$RUN/events.log" 2> "$RUN/listener.stderr" &
+LISTENER_PID=$!
+printf '%s\n' "$LISTENER_PID" > "$RUN/listener.pid"
+
+(
+    SLEEP_PID=
+    stop_sleep() {
+        if [ -n "$SLEEP_PID" ]; then
+            kill -TERM "$SLEEP_PID" 2>/dev/null
+            wait "$SLEEP_PID" 2>/dev/null
+        fi
+        exit 0
+    }
+    trap stop_sleep TERM INT
+    /bin/sleep 360 &
+    SLEEP_PID=$!
+    wait "$SLEEP_PID"
+    : > "$RUN/timeout.fired"
+    if [ -r "/proc/$LISTENER_PID/cmdline" ]; then
+        LISTENER_CMD=$(tr '\000' ' ' < "/proc/$LISTENER_PID/cmdline")
+        case "$LISTENER_CMD" in
+            *lipc-wait-event*) kill -INT "$LISTENER_PID" 2>/dev/null ;;
+        esac
+    fi
+) &
+TIMER_PID=$!
+printf '%s\n' "$TIMER_PID" > "$RUN/timer.pid"
+
+wait "$LISTENER_PID"
+LISTENER_STATUS=$?
+kill -TERM "$TIMER_PID" 2>/dev/null
+wait "$TIMER_PID" 2>/dev/null
+if [ -f "$RUN/timeout.fired" ]; then
+    STOP_REASON=timeout
+else
+    STOP_REASON=listener-exited-before-timeout
+fi
+date -u '+%Y-%m-%dT%H:%M:%SZ' > "$RUN/finish.utc"
+printf '%s\n' "$LISTENER_STATUS" > "$RUN/listener.status"
+printf '%s\n' "$STOP_REASON" > "$RUN/stop.reason"
+printf '%s\n' complete > "$RUN/done"
+exit 0
+EOF
+chmod 700 "$RUN/observer.sh"
+sed -n '1,220p' "$RUN/observer.sh"
+```
+
+**SAFETY CLASSIFICATION:** STATE_CHANGING.
+
+The heredoc creates one named file under the permitted directory, `chmod` limits its access, and `sed` displays it for manual audit. The content has no LIPC property write, service control, rootfs path write, framebuffer access, tracing operation, package action, startup integration, FIFO, or other special filesystem object. During execution it creates only the named regular-file run artifacts.
+
+### PRE kernel snapshot
+
+```sh
+date -u '+PHASE2B-BASELINE-B-PRE %Y-%m-%dT%H:%M:%SZ'
+cat /sys/kernel/debug/suspend_stats
+dmesg 2>&1 | grep -E 'PM: suspend entry|PM: Preparing system for sleep \(mem\)|PM: Suspending system \(mem\)|Suspended for|wake up by|PM: Finishing wakeup|PM: suspend exit'
+```
+
+**SAFETY CLASSIFICATION:** READ_ONLY.
+
+These are the already-approved synchronization and kernel-snapshot reads. They do not clear logs, set time, or change suspend state.
+
+### Detached launch and mandatory human gate
+
+```sh
+nohup setsid /bin/sh "$RUN/observer.sh" </dev/null >"$RUN/supervisor.log" 2>&1 &
+sleep 1
+for f in observer.pid listener.pid timer.pid; do
+    if [ ! -s "$RUN/$f" ]; then
+        printf '\n%s: MISSING OR EMPTY; STOP\n' "$f"
+        continue
+    fi
+    p=$(cat "$RUN/$f")
+    case "$p" in
+        ''|*[!0-9]*)
+            printf '\n%s: INVALID PID %s; STOP\n' "$f" "$p"
+            continue
+            ;;
+    esac
+    printf '\n%s: %s\n' "$f" "$p"
+    if [ ! -d "/proc/$p" ]; then
+        printf 'PID is not running; STOP\n'
+        continue
+    fi
+    readlink -f "/proc/$p/exe"
+    printf 'cmdline: '
+    tr '\000' ' ' < "/proc/$p/cmdline"
+    printf '\n'
+    grep -E '^(Name|PPid|SigIgn):' "/proc/$p/status"
+    awk '{print "pid=" $1 " ppid=" $4 " pgrp=" $5 " session=" $6 " tty_nr=" $7}' "/proc/$p/stat"
+done
+```
+
+**SAFETY CLASSIFICATION:** STATE_CHANGING for the launch; READ_ONLY for `sleep` and the three-PID `/proc` inspection.
+
+The launch creates transient observer processes, a subscription, and output files. The inspection is deliberately limited to the three PIDs written by this run; it does not enumerate unrelated processes or inspect environment, memory, file descriptors, or open files.
+
+The human gate passes only if all three files are present and non-empty, every PID is numeric and running, and:
+
+- `observer.pid` identifies `/bin/busybox` or the expected `/bin/sh` implementation with `observer.sh` in its command line;
+- `listener.pid` identifies `lipc-wait-event` with exactly the approved publisher and event list;
+- the observer's `pid`, `pgrp`, and `session` values are equal and its `tty_nr` is `0`;
+- `SigIgn` for the observer and listener includes the low-order `SIGHUP` bit; and
+- no command failed and the observer has not already written `done`.
+
+Do not infer a pass from `nohup` or `setsid` merely returning success. If the numeric `SigIgn` interpretation or any process identity is unclear, use the targeted abort below and stop.
+
+### Process lifecycle
+
+```text
+KOReader reader.lua
+  `- Dropbear server
+       `- SSH session / interactive shell
+            `- nohup + setsid launch
+                 `- observer.sh  [new SID/PGID, tty_nr=0, SIGHUP ignored]
+                      |- lipc-wait-event --narrow-five-events
+                      |    `- stdout -> events.log
+                      `- timer subshell
+                           `- /bin/sleep 360
+
+ordinary KOReader UI exit
+  -> Dropbear/session may terminate
+  -> detached observer is expected, but not proven, to remain
+
+normal wake; event lines remain observational only
+  -> sleep completes after 360 target-runnable seconds
+  -> timer verifies listener cmdline, sends SIGINT
+  -> observer records timeout completion and exits
+
+listener exits unexpectedly before timer
+  -> observer cancels/reaps timer
+  -> stop.reason records listener-exited-before-timeout
+  -> trial fails; no replacement observer is improvised
+```
+
+### Output and completion check
+
+All deliberate observer output is confined to:
+
+```text
+/mnt/us/stayink-observation/baseline-b/
+  observer.sh
+  start.utc
+  observer.pid
+  listener.pid
+  timer.pid
+  events.log
+  listener.stderr
+  supervisor.log
+  timeout.fired       # present only if the timer fired
+  finish.utc
+  listener.status
+  stop.reason
+  done
+```
+
+`events.log` receives listener stdout directly and preserves its timestamp prefixes. On this target `-t` previously produced local wall-clock-like timestamps related to UTC by the observed timezone offset, but that relationship must be re-established from `start.utc` and the video marker rather than assumed. Regular-file buffering may delay visibility while the process is running; only the file after the listener's reviewed `SIGINT` exit is evidence.
+
+After the cycle, use only these exact targeted reads:
+
+```sh
+RUN=/mnt/us/stayink-observation/baseline-b
+for f in start.utc events.log listener.stderr supervisor.log finish.utc listener.status stop.reason done; do
+    printf '\n===== %s =====\n' "$f"
+    if [ -r "$RUN/$f" ]; then cat "$RUN/$f"; else printf 'MISSING\n'; fi
+done
+for f in observer.pid listener.pid timer.pid; do
+    if [ ! -s "$RUN/$f" ]; then
+        printf '%s: MISSING OR EMPTY\n' "$f"
+        continue
+    fi
+    p=$(cat "$RUN/$f")
+    case "$p" in
+        ''|*[!0-9]*)
+            printf '%s: INVALID PID %s\n' "$f" "$p"
+            continue
+            ;;
+    esac
+    if [ -d "/proc/$p" ]; then
+        printf '%s PID %s currently exists; cmdline: ' "$f" "$p"
+        tr '\000' ' ' < "/proc/$p/cmdline"
+        printf '\n'
+    else
+        printf '%s PID %s is gone\n' "$f" "$p"
+    fi
+done
+date -u '+PHASE2B-BASELINE-B-POST %Y-%m-%dT%H:%M:%SZ'
+cat /sys/kernel/debug/suspend_stats
+dmesg 2>&1 | grep -E 'PM: suspend entry|PM: Preparing system for sleep \(mem\)|PM: Suspending system \(mem\)|Suspended for|wake up by|PM: Finishing wakeup|PM: suspend exit'
+```
+
+**SAFETY CLASSIFICATION:** READ_ONLY.
+
+Successful automatic termination requires `done`, `finish.utc`, `listener.status`, and `stop.reason`, plus no current matching observer/listener/timer command line at the recorded PIDs. A recorded PID may have been reused; an unrelated current command line means the observer is gone and must not be signaled. Missing `done`, an expected command line still present after the timer interval and at least 30 awake seconds, or an unexpected `listener.stderr` means stop and use only the targeted abort procedure.
+
+### Targeted abort and cleanup
+
+Before KOReader exit, or after wake if the expected listener still exists, stop only the recorded listener after revalidating its command line:
+
+```sh
+RUN=/mnt/us/stayink-observation/baseline-b
+LPID=$(cat "$RUN/listener.pid")
+if [ -r "/proc/$LPID/cmdline" ]; then
+    LCMD=$(tr '\000' ' ' < "/proc/$LPID/cmdline")
+    case "$LCMD" in
+        *lipc-wait-event*) kill -INT "$LPID" ;;
+        *) printf 'PID identity mismatch; no signal sent\n' ;;
+    esac
+fi
+sleep 2
+```
+
+**SAFETY CLASSIFICATION:** STATE_CHANGING.
+
+`SIGINT` targets only the observer's recorded child after identity validation. The wrapper should then reap that listener, cancel its timer, write completion metadata, and exit. Do not use `killall`, `pkill`, `KILL`, a service control, or an unverified PID. If this does not work, preserve the artifacts and stop rather than improvising.
+
+Only after the output is copied and PID verification shows no matching observer process remains:
+
+```sh
+RUN=/mnt/us/stayink-observation/baseline-b
+OBS=/mnt/us/stayink-observation
+rm -f "$RUN/observer.sh" "$RUN/start.utc" "$RUN/observer.pid" "$RUN/listener.pid" "$RUN/timer.pid" "$RUN/events.log" "$RUN/listener.stderr" "$RUN/supervisor.log" "$RUN/timeout.fired" "$RUN/finish.utc" "$RUN/listener.status" "$RUN/stop.reason" "$RUN/done"
+rmdir "$RUN"
+rmdir "$OBS" 2>/dev/null || :
+```
+
+**SAFETY CLASSIFICATION:** STATE_CHANGING.
+
+This irreversibly removes only the exact temporary artifacts named above. `rmdir` removes only empty directories; it will preserve the parent if any unrelated file exists. There is no wildcard, recursive removal, rootfs path, remount, or persistent configuration change.
+
+### Observer effects and confounders
+
+- The observer adds one LIPC/D-Bus subscriber, one shell supervisor, the listener, and one sleeping timer. The listener and completion metadata produce a small number of `/mnt/us` writes.
+- Revision 2 uses a regular output file because OBS-003 rejected the FIFO design. Exact buffering and flush behavior remain target-dependent; the evidence is assessed only after reviewed `SIGINT` termination. Missing or truncated lines make the event domain incomplete.
+- The timer has no polling loop and intentionally uses no RTC/alarm wake mechanism. It should not wake the device, but it consumes a PID and timer resource and may slightly perturb scheduling before suspend and after resume.
+- `/mnt/us` is a userstore/FUSE path on this target. Its availability and write latency across suspend are not independently characterized. The design performs no deliberate writes while the kernel is suspended; event and completion writes occur in runnable userspace.
+- KOReader, its SSH plugin, Wi-Fi, and the interactive shell are active during setup. Normal KOReader exit removes the live transport and changes the foreground application. This trial can compare a stock Notebook foreground condition with Baseline A, but cannot establish an unmodified stock boot or attribute differences solely to one helper.
+- The observer's origin under KOReader remains a provenance confound even if it survives process detachment. Whether `com.github.koreader.kindlepowerd` is absent throughout the evidence window remains UNKNOWN in this design.
+- SSH disappearance/reappearance is not suspend evidence. Wi-Fi activity before KOReader exit and after the trial can affect timing and power. No claim about electrical consumption follows.
+- `nohup` and `setsid` protect against ordinary hangup/session coupling, not every possible explicit signal, cgroup cleanup, OOM kill, crash, reboot, or storage error.
+- The phone video, Notebook page, shell transcript, and logs may expose personal content, network details, paths, or timestamps. Use a non-sensitive existing Notebook page; do not record passcode entry or share unredacted artifacts.
+- Ordinary OS, shell-history, filesystem, or audit logging may occur outside the run directory as a side effect of normal device operation. The proposed observer deliberately creates no output elsewhere and does not alter those facilities.
+
+### Baseline B revision 2 trial result — inconclusive
+
+Classification: FACT — FACT-016, OBS-004
+
+The owner reported the stock Kindle Notebook foreground condition. The detached revision 2 observer ran from `2026-08-15T04:06:40Z` until `2026-08-15T04:12:40Z`, exited through its timer with listener status 0, produced empty stderr/supervisor logs, and left no observer, listener, or timer PID running.
+
+The listener prefixes again behaved like local wall-clock values with the previously observed UTC−07:00 relationship. Preserve that as a trial-scoped observation, not a universal definition of `-t`.
+
+| Episode / marker | Listener time | Relation |
+| --- | --- | --- |
+| episode 1 `goingToScreenSaver 2` | 21:09:22.862479 | first captured episode begins |
+| episode 1 `outOfScreenSaver 1` | 21:09:59.118818 | +36.256 seconds |
+| episode 1 `exitingScreenSaver` | 21:09:59.567320 | +36.705 seconds |
+| episode 2 `goingToScreenSaver 2` | 21:10:15.093455 | 15.526 seconds after episode 1 exit |
+| episode 2 first `readyToSuspend 10` | 21:11:15.207734 | +60.114 seconds from episode 2 start |
+| episode 2 repeated `readyToSuspend 10` | 21:11:35.240913 | +80.147 seconds |
+| episode 2 repeated `readyToSuspend 10` | 21:12:05.278706 | +110.185 seconds |
+| episode 2 final captured `readyToSuspend 10` | 21:12:35.319204 | +140.226 seconds |
+| observer timer completion | 21:12:40 local equivalent | approximately five seconds after the final captured event |
+
+No `wakeupFromSuspend` was captured. The post-trial kernel log contained no `PM: suspend entry` after the observer's `04:06:40Z` start; its newest matching transaction entered at `04:02:42.669813449Z` and exited at `04:03:45.082370298Z`, before the observer existed. The post-trial suspend-success value was 79 with all reported failure fields zero. The previously supplied PRE value of 78 was recorded at `03:51:48Z`, before that intervening `04:02:42Z` transaction, so the 78-to-79 change cannot be attributed to Baseline B.
+
+**FACT:** Two powerd screensaver-event episodes were captured during the observer window, and the second produced repeated `readyToSuspend 10` events until the timer ended.
+
+**FACT:** No kernel `mem` suspend/resume transaction was recorded during the observer window. Therefore neither `readyToSuspend` nor visible screen replacement establishes genuine suspend in this trial.
+
+**UNKNOWN:** What caused the first screensaver episode and whether it was related to ordinary KOReader exit, stock UI navigation, or a physical button action. The event log alone does not identify its cause.
+
+**UNKNOWN:** Why the second episode remained at payload 10 and did not reach kernel suspend during the captured interval. Candidate explanations include an ordinary power-management defer condition, observer/environment effects, or insufficient observation time; this evidence does not distinguish them.
+
+**UNKNOWN:** Which software episode corresponds to the phone video. No shared synchronization marker has been supplied that safely aligns the relative video clock with either `goingToScreenSaver` timestamp.
+
+The independent visual record shows:
+
+| Visual marker | Video time | Delta from physical button |
+| --- | --- | --- |
+| physical power-button press | 1.00 seconds | — |
+| illumination darkens | 1.50 seconds | +0.50 seconds |
+| full black | 3.80 seconds | +2.80 seconds |
+| full white | 3.98 seconds | +2.98 seconds |
+| full black | 4.20 seconds | +3.20 seconds |
+| full white | 4.34 seconds | +3.34 seconds |
+| screensaver visible | 5.20 seconds | +4.20 seconds |
+
+Physical wake-button, first visible wake activity, and stable restored-Notebook video times remain UNKNOWN. A repeat is not requested solely to fill those visual fields.
+
+This trial supports the visual replacement sequence and the separate captured powerd episodes in the reported stock-Notebook foreground condition. It does not establish their mutual ordering, a completed kernel suspend, the reason suspend was deferred, or stock rendering/refresh ownership.
+
+### Baseline B revision 2 attempt 2 — successful software/kernel evidence
+
+Classification: FACT — FACT-017, OBS-005
+
+This second supplied execution used the same revision 2 observer after the prior decision gate had said not to repeat it unchanged. The evidence is preserved because it occurred, but its success does not retroactively approve bypassing that gate. The owner again supplied it as the stock Kindle Notebook foreground condition after ordinary KOReader exit; the environment remains Véra/KPM and is not a proven pure-stock boot.
+
+The observer ran from `2026-08-15T05:40:20Z` until `2026-08-15T05:48:18Z`, exited through its timer with listener status 0, produced empty stderr/supervisor logs, and left all three recorded PIDs gone. The listener's local wall-clock-like prefixes again have the observed UTC−07:00 relationship to kernel UTC for this trial.
+
+| Marker | Local wall-clock-like time | Relation |
+| --- | --- | --- |
+| `goingToScreenSaver 2` | 22:40:58.346793 | event sequence start |
+| first `readyToSuspend 10` | 22:41:58.363176 | +60.016 seconds |
+| `readyToSuspend 8` | 22:42:03.369155 | +65.022 seconds |
+| first `readyToSuspend 7` | 22:42:08.375699 | +70.029 seconds |
+| repeated `readyToSuspend 7` | 22:42:28.418574 | +90.072 seconds |
+| `readyToSuspend 6` | 22:42:33.428208 | +95.081 seconds |
+| `readyToSuspend 2` | 22:42:38.430778 | +100.084 seconds |
+| final `readyToSuspend 1` | 22:42:43.436594 | +105.090 seconds |
+| kernel `mem` suspend entry | 22:42:53.394434 | +115.048 seconds; 9.958 seconds after final readiness event |
+| kernel suspend exit | 22:44:51.694686 | after the kernel-reported suspended interval |
+| `wakeupFromSuspend 118` | 22:44:51.711417 | 0.017 seconds after kernel exit |
+| `outOfScreenSaver 1` | 22:44:51.820859 | 0.126 seconds after kernel exit |
+| `exitingScreenSaver` | 22:44:52.335824 | 0.641 seconds after kernel exit |
+
+The kernel recorded a complete transaction: entry at `2026-08-15 05:42:53.394433801 UTC`, device suspension, `Suspended for 117.998 seconds`, wake, resume, and exit at `05:44:51.694685807 UTC`. The post-trial suspend-success value was 82 and all supplied failure fields were zero. No immediately preceding suspend-statistics snapshot was supplied for this attempt, so no counter delta is attributed to it; the in-window kernel timestamps independently identify the transaction.
+
+**FACT:** The selected powerd events bracketed a genuine kernel `mem` suspend/resume transaction in this attempt's reported stock-Notebook foreground condition.
+
+**INFERENCE:** The `wakeupFromSuspend` payload 118 is consistent with the kernel-reported 117.998-second suspended interval.
+
+**UNKNOWN:** Whether that payload is formally defined as suspended duration on firmware 5.19.5 or other versions.
+
+**INFERENCE:** The repeated readiness payload sequence is consistent with a readiness/defer countdown that eventually reached 1 before kernel entry.
+
+**UNKNOWN:** The formal meaning, units, publisher-side conditions, and reason for individual readiness payload values.
+
+**FACT:** Baseline A and this attempt both emitted the payload sequence `10, 8, 7, 7, 6, 2, 1`, placed the first readiness event about 60 seconds after `goingToScreenSaver`, the final payload about 105 seconds after it, and kernel entry about 115 seconds after it.
+
+**INFERENCE:** In these two trials, changing the foreground from KOReader to the reported stock Notebook condition did not materially change the observed powerd readiness schedule leading to kernel entry.
+
+**UNKNOWN:** Whether that timing is stable across further cycles, other device states, or a provably third-party-free environment; the two trials do not establish causality.
+
+The observer's `start.utc` to `finish.utc` interval was 478 seconds, while its timer requested 360 seconds and the kernel reported 117.998 suspended seconds. Within the one-second file timestamp precision, `478 − 117.998 ≈ 360.002` seconds.
+
+**FACT:** In this target trial, the observer's `/bin/sleep 360` timer did not advance materially during the kernel-reported suspend interval. It therefore bounded approximately 360 seconds of runnable wall time, not 360 seconds of external elapsed time across suspend.
+
+No phone-video timeline or shared synchronization marker was supplied for attempt 2. The earlier visual sequence belongs to the prior inconclusive attempt and must not be combined with this transaction. Physical replacement timing and visible restoration relative to attempt 2's powerd/kernel events remain UNKNOWN.
+
+### Baseline B decision gate
+
+Revision 1 remains rejected. Revision 2 attempt 1 was inconclusive; attempt 2 establishes the selected powerd-to-kernel ordering and a genuine kernel `mem` transaction in the reported stock-Notebook foreground condition. It also establishes the timer's suspend-excluding behavior for this target trial.
+
+Baseline B is not complete for its central visual-ordering question because attempt 2 lacks synchronized visual evidence. Do not repeat the device experiment solely to fill that gap without a separately reviewed synchronization design. The available evidence still cannot identify the renderer or panel-refresh owner, prove framebuffer retention, establish electrical low-power depth, or qualify the environment as pure stock.

@@ -210,3 +210,30 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Visual record: the physical button press occurred at video 1.67 seconds, illumination darkened at 2.05 seconds (+0.38), and a black/white flash with the KOReader sleeping box appeared at 2.10 seconds (+0.43).
 - Timestamp scope: the listener prefixes behaved like local wall time and had an observed UTC−07:00 relationship to adjacent UTC markers. No shared synchronization marker connected the phone-video clock to the listener clock, so the visual sequence cannot be aligned with `goingToScreenSaver`.
 - Interpretation limits: repeated `readyToSuspend` payloads may reflect a countdown or readiness/defer process, but their precise semantics are UNKNOWN. Payload 83 is consistent with the 82.711-second kernel-reported suspended interval, but its formal definition is UNKNOWN. Physical wake and restored-UI video times are UNKNOWN. The trial does not identify a renderer, framebuffer writer, panel-refresh owner, stock Amazon timing, electrical current, or lowest hardware residency depth.
+
+## FACT-016 — The first stock-Notebook Baseline B attempt did not reach kernel suspend
+
+- Classification: FACT
+- Source: OBS-004
+- Repository / commit: NOT APPLICABLE; direct target-device and phone-video observation
+- Evidence location: Baseline B revision 2 trial result in `docs/research/POWER_TRACE.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5; Linux `4.9.77-lab126`
+- Environment: Véra/KPM; observer launched through KOReader SSH and reported stock Kindle Notebook foreground after ordinary KOReader exit; not a proven pure-stock boot
+- Confidence: high for captured events, observer lifecycle, visual sequence, and absence of a kernel transaction during the observer window; low for episode causes and `readyToSuspend` payload semantics
+- Relevance: demonstrates that visible replacement and `readyToSuspend` reports cannot be treated as proof of genuine suspend, and identifies an observation-bound/design issue before any StayInk intervention.
+- Evidence: the detached observer ran from `04:06:40Z` through `04:12:40Z`, captured one short `goingToScreenSaver`/exit episode followed by a second episode with repeated `readyToSuspend 10` reports, and terminated cleanly by timer. The kernel log contained no suspend entry after observer start. Its newest transaction began at `04:02:42Z`, before the observer. The visual record independently showed the physical button at 1.00 seconds, illumination darkening at 1.50, alternating full-panel black/white states from 3.80 through 4.34, and a screensaver at 5.20.
+- Verification: listener status was 0, stderr/supervisor logs were empty, all observer PIDs were gone, and post-trial suspend failure fields were zero. The supplied 78-to-79 success-counter change spans the earlier `04:02:42Z` transaction and is not attributed to Baseline B. No shared marker aligns the video with either software episode; episode causes, defer reason, wake visuals, renderer ownership, panel-refresh ownership, and electrical low-power depth remain UNKNOWN.
+
+## FACT-017 — A later stock-Notebook Baseline B attempt brackets a kernel `mem` transaction
+
+- Classification: FACT
+- Source: OBS-005
+- Repository / commit: NOT APPLICABLE; direct target-device observation
+- Evidence location: Baseline B revision 2 attempt 2 in `docs/research/POWER_TRACE.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5; Linux `4.9.77-lab126`
+- Environment: Véra/KPM; observer launched through KOReader SSH and reported stock Kindle Notebook foreground after ordinary KOReader exit; not a proven pure-stock boot
+- Confidence: high for event/kernel ordering, complete kernel transaction, observer cleanup, and timer behavior; low for undocumented payload semantics; no visual-to-software confidence because no attempt-2 video timeline was supplied
+- Relevance: establishes the stock-Notebook-condition software/kernel power ordering needed before a later visual correlation or StayInk intervention, while preserving the distinction between screensaver events and genuine suspend.
+- Evidence: `goingToScreenSaver 2` was followed by readiness payloads `10, 8, 7, 7, 6, 2, 1`; kernel suspend entry followed the final payload by 9.958 seconds. The kernel reported 117.998 seconds suspended, then exited 0.017 seconds before `wakeupFromSuspend 118`; `outOfScreenSaver` and `exitingScreenSaver` followed. Listener exit status was 0, observer logs had no errors, and all recorded observer PIDs were gone.
+- Timer observation: observer start-to-finish was 478 seconds for `/bin/sleep 360`; subtracting the kernel-reported 117.998-second suspend yields approximately 360.002 seconds. In this trial the timer did not advance materially during suspend.
+- Verification limits: post-trial suspend success was 82 with zero supplied failure fields, but no immediately preceding counter snapshot was supplied, so no counter delta is claimed. The supplied kernel timestamps independently place the complete transaction inside the observer window. Formal event-payload meanings, attempt-2 visual timing, renderer/panel ownership, framebuffer retention, electrical power, and pure-stock applicability remain UNKNOWN.
