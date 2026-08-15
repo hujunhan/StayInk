@@ -30,77 +30,52 @@ KOReader labels distinct hall suspend/wake sources, and the 5.19.4 attachment co
 ## What is not confirmed
 
 - No stock Scribe source identifies the sleep-image renderer or its refresh call.
-- No examined evidence measures actual Scribe power draw or kernel suspend depth while the current image remains visible.
+- No examined evidence measures actual Scribe power draw or establishes the lowest hardware residency depth while the current image remains visible.
 - No examined evidence proves panel contents naturally survive short suspend, long suspend, or resume initialization on Scribe.
 - No examined evidence identifies a safe LIPC property that suppresses only the display replacement.
 - No stylus-specific interaction found in the scoped references establishes the suspend state machine.
 - Behavior on one Scribe generation or firmware remains unconfirmed on every other combination.
 
-## Next experiment: `kindle-device-probe`
+## Phase 2A target-device reconnaissance — COMPLETE
 
-This is a design for a future observation session, not an implementation or authorization to run it.
+Phase 2A was completed through the manually audited, read-only observations in `DEVICE_PROBE.md`. No executable probe, framebuffer access, service control, LIPC write, suspend request, or persistent device change was used.
 
-### Purpose
+### Observed target context
 
-Compare one real Scribe's identity, powerd event ordering, display metadata, processes, and existing runtime facilities against the assumptions above. It must not attempt to suppress a screen, write a framebuffer, change a LIPC property, stop a process, load a module, remount a filesystem, or install persistence.
+Classification: FACT — OBS-001
 
-### Preconditions
+| Field | Observation |
+| --- | --- |
+| UI model wording | Kindle Scribe |
+| Generation / physical model number | UNKNOWN / UNKNOWN |
+| Firmware | 5.19.5 |
+| Kernel / architecture | `4.9.77-lab126` / ARMv7 |
+| Shell privilege | BusyBox shell as root with broad effective capabilities |
+| Display interface | `hwtcon_v2`; 1860×2480 mode; 1872×4960 virtual size; 8 bits per pixel; stride 1872 |
+| UI variants | passcode enabled; no Special Offers; portrait; no magnetic cover |
+| Jailbreak environment | Véra and KPM |
+| Third-party state | KOReader's `com.github.koreader.kindlepowerd` publisher was active |
 
-- Record exact Scribe generation and firmware before interpreting results.
-- Use a non-sensitive stock UI page; close every notebook and personal document.
-- Remove the magnetic cover for the button trial. Run a separate cover trial only afterward.
-- Ensure ordinary wake/reboot is known to work before observation.
-- Define where output goes. Strict mode prints to an externally captured console. If that is unavailable, creating one new timestamped log under `/mnt/us/stayink-probe/` requires separate approval; that is reversible logging, not literally zero-write probing.
+The active KOReader publisher means the observed environment must not be called a pure stock baseline.
 
-### Read-only inventory
+### Process and suspend evidence
 
-Collect only readable information already exposed by the device:
+Classification: FACT — FACT-013, FACT-014
 
-- firmware and kernel identity from `/etc/prettyversion.txt`, `uname`, `/proc/cpuinfo`, and `/proc/cmdline`;
-- mounted filesystems from `/proc/mounts`, without mounting or remounting anything;
-- Scribe/display metadata from readable `/sys/class/graphics/fb0/*`, framebuffer variable/fixed-info queries, and device-node metadata—never pixel contents;
-- supported sleep-state names from readable `/sys/power/state` and `/sys/power/mem_sleep` when present;
-- process names and arguments for powerd, blanket, pillow, window manager, and GUI components, without signals or restarts;
-- existing init-job names/configuration and read-only status, without starting, stopping, or reloading jobs;
-- input topology from `/proc/bus/input/devices` and device links, without opening or grabbing input devices;
-- LIPC publisher/property/event inventories using read-only probe operations; retrieve only documented readable powerd state/status properties;
-- already-available kernel/system logs relevant to suspend and resume, without enabling new logging facilities or clearing logs.
+The six named candidate publishers were mapped to their current executables and command lines. Blanket's observed command line contains the literal argument `screensaver`; KPPMainApp owns the `ScreenSaverListener` publisher; KOReader's publisher belongs to its active `reader.lua` process.
 
-Serial numbers, account identifiers, document names, and unrelated logs must be redacted. The probe must not read `/dev/fb0` pixels because the current display may contain private notebook or document content.
+Classification: INFERENCE
 
-### Controlled observation sequence
+The literal blanket argument and the independently observed blanket publisher make blanket a stronger candidate participant in the screen-replacement path. This is supported by FACT-013 and is consistent with, but does not prove, the blanket-related behavior in FACT-012.
 
-1. Start a timestamped, subscription-only listener for the powerd event names in FACT-001 and periodically read the already-readable powerd state.
-2. Record the baseline state for at least one minute without input.
-3. Have the user press the physical power button once.
-4. Leave the device untouched long enough to observe any readiness sequence and a conservatively long sleep interval.
-5. Have the user wake it with the physical button and wait for the normal UI to settle.
-6. Repeat once with a known magnetic cover, recording that as a separate trial.
-7. Stop observation normally and remove any approved output file after it has been copied and reviewed.
+Classification: UNKNOWN
 
-The listener is observation-only. It must not synthesize `powerButton`, touch a timeout, schedule RTC wake, or prevent/abort/defer suspend.
+Neither blanket's command line nor KPPMainApp's publisher name establishes who writes framebuffer pixels, submits the E-Ink panel refresh, renders the replacement, or acts first relative to powerd events.
 
-### Success criteria
+Existing kernel messages record complete `mem` suspend/resume transactions on this target. They provide a kernel-level oracle independent of screensaver and powerd labels, but do not measure electrical power or establish the lowest hardware residency depth.
 
-The probe succeeds if it produces a redacted timeline that correlates:
+### Closure boundary
 
-- user action;
-- all observed powerd events and payloads;
-- readable powerd states;
-- relevant existing kernel suspend/resume messages;
-- whether and when the visible display changes;
-- button versus cover behavior;
-- exact model, firmware, and display-controller metadata.
+Phase 2A established the target identity available from the UI/kernel, firmware, privileges, mounts, installed observation tools, power/display/input/log interfaces, candidate publisher owners, and available kernel suspend evidence. The initially incomplete process inventory was closed by the targeted PID-to-procfs observation in FACT-013.
 
-It must also report which requested data was unavailable rather than escalating privileges or changing configuration.
-
-### What it can falsify
-
-- If the Scribe does not expose the event set in FACT-001, KOReader's assumed observation interface is not portable to that firmware.
-- If replacement occurs before any observable event, an event-triggered intervention may be too late.
-- If readiness/wake ordering differs from SRC-008, that log cannot define the target device's sequence.
-- If display/controller metadata does not match the MTK mappings, FBInk/KOReader assumptions require revision.
-
-### Limit of the probe
-
-An application event and elapsed timestamp do not prove low-power residency. If existing kernel messages are insufficient, a later experiment needs non-invasive external power measurement. That later measurement should be designed separately; the probe must not substitute an inference for proof.
+Phase 2A did not trace a controlled power-button transition, timestamp the visible replacement, attribute a framebuffer write or panel refresh, compare framebuffer and panel contents across suspend, measure current draw, or test a wake path. Those remain separate Phase 2B/2C design questions. No additional Phase 2A device commands are authorized or needed.

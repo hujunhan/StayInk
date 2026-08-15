@@ -40,6 +40,14 @@ In one 5.19.4 sequence, screen-saver entry precedes the first readiness callback
 
 The event called `wakeupFromSuspend` is evidence that powerd emitted that event. It is not, by itself, proof of current draw, kernel suspend depth, or the time spent in the lowest available state.
 
+### The target kernel records `mem` suspend/resume transactions
+
+Classification: FACT — FACT-014
+
+On the observed Scribe running firmware 5.19.5, existing kernel-ring-buffer sequences contain `PM: suspend entry`, preparation and system suspension for `mem`, completed device/noirq phases, a platform-reported suspended duration, completed resume phases, and `PM: suspend exit`. This is direct evidence of kernel system suspend/resume handling and is stronger than screensaver state or a powerd event name.
+
+The observation does not measure current draw or identify the lowest hardware residency depth. KOReader's `com.github.koreader.kindlepowerd` publisher was active during Phase 2A, so the environment is not a pure stock baseline. A later controlled trial still needs an external power measurement if StayInk is to claim genuine low-power behavior equivalent to control.
+
 ## Current synthesis
 
 ### The display phase and suspend-readiness phase are observably distinct

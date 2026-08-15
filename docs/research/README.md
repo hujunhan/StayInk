@@ -7,6 +7,7 @@ This directory keeps evidence separate from interpretations and open questions.
 - `POWER.md`, `DISPLAY.md`, `PACKAGING.md`, and `SCRIBE.md` synthesize facts by research question.
 - `HYPOTHESES.md` ranks testable candidate mechanisms.
 - `UNKNOWNS.md` records unresolved questions.
+- `DEVICE_PROBE.md` records the completed Phase 2A read-only target reconnaissance procedure and closure boundary.
 
 ## Classification
 

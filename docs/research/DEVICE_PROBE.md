@@ -1,16 +1,16 @@
 # Kindle Scribe Phase 2A Device Probe Specification
 
-Status: design only; not executed
-Date: 2026-08-14
-Target model / generation: **UNKNOWN** until manually recorded
-Target firmware / build: **UNKNOWN** until manually recorded
-Execution environment and privileges: **UNKNOWN** until observed
+Status: COMPLETE; executed manually with read-only observations; no executable probe created
+Designed: 2026-08-14; completed: 2026-08-15 UTC
+Target model / generation: Kindle Scribe / **UNKNOWN**
+Target firmware / build: 5.19.5 / detailed build **UNKNOWN**
+Execution environment and privileges: Véra/KPM; BusyBox shell as root with broad effective capabilities; KOReader publisher active
 
 ## Scope and decision boundary
 
 The concrete question for Phase 2A is: **Which read-only observables are actually present on the target Scribe, and are they sufficient to design a separate suspend/display trace?** This matters because StayInk must preserve the displayed image while still allowing genuine low-power suspend and normal wake.
 
-This probe is awake-state environment discovery only. It does not press or inject the power button, enter screensaver, request suspend, wait through suspend, wake the device, trace a transition, change a LIPC property, access framebuffer pixels, or alter a service. It therefore cannot identify the sleep-screen renderer, establish event ordering, prove low-power residency, or test display persistence.
+This probe is environment discovery only. Its commands do not press or inject the power button, request or control suspend, wake the device, trace a controlled transition, change a LIPC property, access framebuffer pixels, or alter a service. It therefore cannot identify the sleep-screen renderer, establish event ordering, prove electrical low-power residency, or test display persistence.
 
 Important terms:
 
@@ -396,6 +396,57 @@ Run only if Stage 1 found `dbus-send`. Cross-reference returned PIDs manually wi
 
 **WHAT PHASE-1 UNKNOWN IT HELPS ANSWER:** Narrows process/service candidates for UNK-001 and prepares UNK-003 tracing.
 
+### Observation S2-8A — Targeted service-owner process identities
+
+Use this follow-up only when Observation S2-1 does not expose the system processes. It is one manually pasted compound observation, not an executable probe file.
+
+**COMMAND OR OBSERVATION:**
+
+```sh
+for s in com.lab126.powerd com.lab126.blanket com.lab126.pillow com.lab126.winmgr com.lab126.KPPMainApp.ScreenSaverListener com.github.koreader.kindlepowerd; do
+    printf '\nSERVICE: %s\n' "$s"
+    reply="$(dbus-send --system --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.GetConnectionUnixProcessID string:"$s" 2>&1)"
+    case "$reply" in
+        *"uint32 "*) pid="${reply##*uint32 }" ;;
+        *)
+            printf 'owner_pid: UNAVAILABLE\n%s\n' "$reply"
+            continue
+            ;;
+    esac
+    case "$pid" in
+        ''|*[!0-9]*)
+            printf 'owner_pid: INVALID (%s)\n' "$pid"
+            continue
+            ;;
+    esac
+    printf 'owner_pid: %s\n' "$pid"
+    printf 'exe: '
+    readlink -f "/proc/$pid/exe" || printf 'UNAVAILABLE\n'
+    printf 'comm: '
+    cat "/proc/$pid/comm" || printf 'UNAVAILABLE\n'
+    printf 'cmdline: '
+    if [ -r "/proc/$pid/cmdline" ]; then
+        tr '\000' ' ' < "/proc/$pid/cmdline"
+        printf '\n'
+    else
+        printf 'UNAVAILABLE\n'
+    fi
+    grep -E '^(Name|PPid|Uid|Gid):' "/proc/$pid/status" || printf 'status fields: UNAVAILABLE\n'
+done
+```
+
+**PURPOSE:** For only the six named publishers, obtain the current owner PID and immediately identify that process through narrowly selected procfs metadata. This includes the KOReader-named publisher as a potential third-party confounder; nothing is disabled or controlled.
+
+**EXPECTED INFORMATION:** For each currently registered service: owner PID, executable path, kernel process name, NUL-separated command arguments rendered as spaces, parent PID, and real/effective/saved/filesystem UID and GID values. An unregistered service, exited process, permission failure, or empty command line is recorded rather than expanded into broader discovery.
+
+**SAFETY CLASSIFICATION:** READ_ONLY.
+
+**WHY IT IS BELIEVED READ-ONLY:** The already-reviewed D-Bus call queries bus-daemon ownership metadata. Shell variables, `case`, tests, and `printf` affect only the temporary shell process. `readlink`, `cat`, `tr`, and `grep` open only `/proc/<PID>/exe`, `comm`, `cmdline`, and `status` for reading. The command does not enumerate `/proc`, inspect `environ`, memory, file descriptors, or open-file contents, and sends no signal or service request.
+
+**PORTABILITY / AVAILABILITY RISK:** Medium. The target has already demonstrated the required BusyBox shell operations and tools, but a service can exit or change owner between the D-Bus reply and procfs reads. `comm` and `Name` can be truncated, `cmdline` can be empty, and `/proc/<PID>/exe` can be inaccessible or marked deleted. Treat missing or inconsistent fields as an unresolved snapshot; do not retry through broad enumeration or inspect additional procfs paths.
+
+**WHAT PHASE-1 UNKNOWN IT HELPS ANSWER:** Closes the Phase 2A process-inventory gap and distinguishes stock-named publisher owners from the KOReader-named confounder. It narrows candidates for UNK-001 and later UNK-003 tracing, but service ownership and executable identity still do not prove which component performs the sleep-screen framebuffer write or panel refresh.
+
 ### Observation S2-9 — Narrow powerd state getter
 
 **COMMAND OR OBSERVATION:**
@@ -639,14 +690,18 @@ Copy the redacted development-machine transcript described above: UI baseline, e
 All central behavior unknowns remain after Phase 2A:
 
 - UNK-001: process and service inventories provide candidates but do not identify the stock sleep-screen renderer.
-- UNK-002: available kernel/log interfaces may narrow oracle design but do not demonstrate genuine low-power suspend.
+- UNK-002: existing kernel logs directly demonstrate `mem` suspend/resume transactions, but electrical low-power residency and the lowest hardware depth remain unknown.
 - UNK-003: no transition occurs, so replacement timing relative to powerd events remains unknown.
 - UNK-004: no suspend/resume or framebuffer/panel comparison occurs, so persistence remains unknown.
 - UNK-005: no bypass/intervention is attempted, so genuine-suspend compatibility remains unknown.
 - UNK-006: wake sources may be inventoried, but no wake path or UI restoration is tested.
 - UNK-007: current privileges/mounts narrow the environment, but no safe future lifecycle is established.
-- UNK-008: the single target row is narrowed; portability to other models, firmware, and UI variants remains unknown.
+- UNK-008: one firmware 5.19.5 target row is established, but its generation and portability to other models, firmware, and UI variants remain unknown.
 
 ### 7. Executable probe decision
 
-There is not enough confidence to create `scripts/device-probe.sh`. The first interaction should remain manual because target shell/tool variants are unknown, several useful tools remain unreviewed, output requires human privacy review, errors must not trigger automatic fallbacks/escalation, and a remote session itself has observer effects. An executable probe can be reconsidered only after the exact Stage 1/Stage 2 commands have been run manually on this target and their availability/output have been reviewed individually.
+No `scripts/device-probe.sh` was created. Manual execution confirmed the approved command behavior on this target, but an executable remains unjustified because output requires human privacy review, several broader tools remain unreviewed, errors must not trigger automatic fallback or escalation, and a remote session has observer effects.
+
+## Completion record
+
+Phase 2A is closed. Stage 1 and Stage 2 were completed, and the `ps w` limitation was resolved with the six-service targeted PID-to-procfs observation in S2-8A. The resulting process evidence is recorded as FACT-013; the existing kernel suspend evidence is recorded as FACT-014. No additional Phase 2A device commands are approved or needed. Phase 2B transition tracing requires a separate design and safety review.

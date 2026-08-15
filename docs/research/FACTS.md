@@ -145,3 +145,40 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Relevance: identifies one display-side control independent of KOReader's powerd event subscription, but not yet a safe StayInk mechanism.
 - Evidence: KOReader writes `unload=screensaver` to `com.lab126.blanket` in its framework-stopped path and writes `load=screensaver` on exit.
 - Verification: inspected lines 367–383 and 2044–2054. This path is conditional, state-changing, and not demonstrated here on stock Scribe firmware.
+
+## FACT-013 — Six candidate publishers were mapped to processes on the target Scribe
+
+- Classification: FACT
+- Source: OBS-001
+- Repository / commit: NOT APPLICABLE; direct target-device observation
+- Evidence location: Phase 2A D-Bus `GetConnectionUnixProcessID` results followed immediately by selected `/proc/<PID>` metadata reads
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: Véra jailbreak with KPM; KOReader publisher active; not a pure stock baseline
+- Confidence: high for the point-in-time publisher-to-process mapping
+- Relevance: narrows the processes that can be correlated with display replacement in Phase 2B and identifies an active third-party confounder.
+- Evidence:
+
+| D-Bus publisher | Executable | Observed process / command line |
+| --- | --- | --- |
+| `com.lab126.powerd` | `/usr/bin/powerd` | `powerd`; `powerd -f` |
+| `com.lab126.blanket` | `/usr/sbin/blanket` | `blanket`; `blanket -t screensaver langpicker blankwindow` |
+| `com.lab126.pillow` | `/app/KPPPillow-2.0/bin/pillowd` | `pillowd`; `/app/KPPPillow-2.0/bin/pillowd -c /app/KPPPillow-2.0/static/config` |
+| `com.lab126.winmgr` | `/usr/bin/awesome` | `awesome`; `awesome` |
+| `com.lab126.KPPMainApp.ScreenSaverListener` | `/app/bin/KPPMainAppV2` | `KPPMainApp`; argv began `/app/bin/KPPMainApp` |
+| `com.github.koreader.kindlepowerd` | `/mnt/us/koreader/luajit` | `reader.lua`; `./luajit ./reader.lua` |
+
+- Narrow interpretation: blanket's observed command line contains the literal argument `screensaver`. KPPMainApp owns the `ScreenSaverListener` publisher. KOReader's publisher was owned by its active `reader.lua` process.
+- Verification: reviewed the owner-supplied command output. The query was limited to the six named services and read only `exe`, `comm`, `cmdline`, and selected `status` fields. Publisher ownership, executable names, and command-line tokens do not establish framebuffer-write, E-Ink refresh, rendering, or event-ordering ownership.
+
+## FACT-014 — Existing target kernel logs record complete `mem` suspend/resume transactions
+
+- Classification: FACT
+- Source: OBS-001
+- Repository / commit: NOT APPLICABLE; direct target-device observation
+- Evidence location: Phase 2A filtered read of the existing kernel ring buffer
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5; Linux `4.9.77-lab126`
+- Environment: Véra jailbreak with KPM and an active KOReader publisher; not a pure stock baseline
+- Confidence: high that the captured lines record kernel system suspend/resume transactions; low for electrical low-power depth
+- Relevance: establishes an available kernel-level suspend oracle that is independent of screensaver and powerd event terminology.
+- Evidence: captured sequences include `PM: suspend entry`, `Preparing system for sleep (mem)`, `Suspending system (mem)`, completed device/noirq suspend phases, a platform-reported suspended duration, completed resume phases, and `PM: suspend exit`.
+- Verification: read pre-existing messages only; no suspend was requested by the probe. These lines establish kernel `mem` suspend/resume handling, but do not measure current draw, identify the lowest hardware residency state, or show that the current display survived unchanged.

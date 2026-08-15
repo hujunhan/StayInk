@@ -1,6 +1,6 @@
 # Sources
 
-Repository evidence is pinned to a full commit SHA. Web and issue evidence is mutable, so its retrieval date and revision metadata are recorded instead. All local checkouts are unmodified references under the gitignored `.research/repos/` directory.
+Repository evidence is pinned to a full commit SHA. Web and issue evidence is mutable, so its retrieval date and revision metadata are recorded instead. Direct target-device observations use `OBS` identifiers and record the device, firmware, observation date, environment, and limitations without inventing a repository revision. All local checkouts are unmodified references under the gitignored `.research/repos/` directory.
 
 ## SRC-001 — KindleModding/KPM
 
@@ -107,3 +107,15 @@ Repository evidence is pinned to a full commit SHA. Web and issue evidence is mu
 - Local reference path: NOT CLONED
 - Relevance: a Scribe cover-wake report resolved by changing KOReader's own “ignore cover” setting.
 - Limitations: firmware is not stated, the reported KOReader version appears malformed, and the issue does not establish stock hall-sensor behavior.
+
+## OBS-001 — Phase 2A target Kindle Scribe reconnaissance
+
+- Source: direct, manually captured target-device observations supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: jailbroken with Véra and KPM; passcode enabled; no Special Offers; no magnetic cover; KOReader's `com.github.koreader.kindlepowerd` publisher was active
+- Evidence location: approved read-only commands in `docs/research/DEVICE_PROBE.md`; redacted results recorded in FACT-013, FACT-014, and the Phase 2A closure section of `docs/research/SCRIBE.md`
+- License: NOT APPLICABLE to owner-supplied observations
+- Relevance: establishes the actual target environment, candidate D-Bus publisher owners, and available kernel suspend evidence before Phase 2B design.
+- Limitations: point-in-time snapshots from one Scribe on one firmware; the Scribe generation remains unknown; raw output is not committed because it included a device serial; the active KOReader publisher means this was not a pure stock baseline; no controlled display/event trace or external power measurement was performed.

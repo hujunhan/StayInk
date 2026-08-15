@@ -3,21 +3,21 @@
 ## UNK-001 — Which stock Scribe component replaces the display?
 
 - Classification: UNKNOWN
-- Sources: SRC-003, SRC-004, SRC-008, SRC-009
+- Sources: SRC-003, SRC-004, SRC-008, SRC-009, OBS-001
 - Model / firmware: all Scribe variants / all firmware
 - Confidence: high that the question is correctly framed
 - Relevance: a display-side intervention cannot be scoped safely without identifying the owner.
-- Current evidence: KOReader refers to blanket, pillow, and the window manager in different UI modes; KindleModding inventories their LIPC interfaces; none is stock Scribe source or a process trace of the replacement.
+- Current evidence: FACT-013 maps six publishers to their target processes on firmware 5.19.5. Blanket's command line contains the literal `screensaver` argument, making blanket a stronger candidate participant by inference; KPPMainApp owns the `ScreenSaverListener` publisher. Neither name nor ownership attributes the framebuffer write or panel-refresh request. KOReader's active publisher also means the observed environment was not a pure stock baseline.
 - Resolution criteria: a target-device timestamped trace that attributes the framebuffer write and panel-refresh request to a process/module without modifying it.
 
 ## UNK-002 — What proves genuine low-power suspend on Scribe?
 
 - Classification: UNKNOWN
-- Sources: SRC-004, SRC-008
+- Sources: SRC-004, SRC-008, OBS-001
 - Model / firmware: Scribe / target firmware
 - Confidence: high
 - Relevance: preserving the image while merely keeping the device awake is invalid.
-- Current evidence: event names and elapsed times suggest suspend, but no reviewed evidence measures power, kernel state, or residency depth.
+- Current evidence: FACT-014 provides direct kernel evidence of complete `mem` suspend/resume transactions on the target. No reviewed evidence measures current draw or establishes the lowest hardware residency depth, and the observed environment included an active KOReader publisher.
 - Resolution criteria: correlate existing kernel suspend/resume evidence with non-invasive external power measurement and a stock control trial.
 
 ## UNK-003 — When does the replacement refresh occur relative to powerd events?
@@ -53,11 +53,11 @@
 ## UNK-006 — What restores the normal UI on every wake path?
 
 - Classification: UNKNOWN
-- Sources: SRC-004, SRC-008
+- Sources: SRC-004, SRC-008, OBS-001
 - Model / firmware: Scribe / target firmware
 - Confidence: high
 - Relevance: scheduled wakes, button wakes, cover wakes, passcode, and long-sleep wakes may require different restoration behavior.
-- Current evidence: KOReader distinguishes suspend wake from screensaver exit and reports background wake/resuspend; recent Scribe users report wake-display corruption.
+- Current evidence: KOReader distinguishes suspend wake from screensaver exit and reports background wake/resuspend; recent Scribe users report wake-display corruption. Phase 2A exposed power-key, hall, RTC/alarm, WLAN, USB, touch, and stylus-related interfaces on the target, but did not map kernel wake labels to physical causes or test restoration through any path. The target had a passcode enabled and no magnetic cover fitted.
 - Resolution criteria: control and candidate trials covering short/long sleep, button/cover wake, scheduled background wake when naturally observed, and normal UI verification.
 
 ## UNK-007 — What rootfs-free lifecycle can run a future mechanism?
@@ -73,9 +73,9 @@
 ## UNK-008 — Which model, firmware, and UI variants change the path?
 
 - Classification: UNKNOWN
-- Sources: SRC-004, SRC-005, SRC-008, SRC-009
+- Sources: SRC-004, SRC-005, SRC-008, SRC-009, OBS-001
 - Model / firmware: each community-mapped Scribe device set and variant / all relevant releases
 - Confidence: high
 - Relevance: support cannot be inferred across devices or releases.
-- Current evidence: community model tables differ by generation; issue evidence spans 5.17.2–5.19.4 but remains KOReader-specific; stock passcode and Special Offers paths are not characterized.
+- Current evidence: OBS-001 establishes one UI-identified Kindle Scribe on firmware 5.19.5 with passcode enabled, no Special Offers, no magnetic cover, Véra, KPM, and an active KOReader publisher. Its generation and physical model number remain unknown. Community model tables differ by generation, and earlier issue evidence remains KOReader-specific.
 - Resolution criteria: maintain a device/firmware matrix with repeated event, display, low-power, and wake observations for each claimed supported combination.
