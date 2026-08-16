@@ -484,3 +484,16 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Relevance: closes the read-only identity/ownership gate needed before a presentation-only runtime experiment can be designed.
 - Evidence: `xwininfo -id 0x400001 -stats -wm` reconfirmed the exact title, 1860x2480 geometry, depth-8 `StaticGray` visual, `InputOutput`, `IsUnMapped`, and no override redirect. It reported no conventional window-manager hints, desktop 0, and process ID 4524. FACT-013 previously maps PID 4524, the `com.lab126.blanket` owner, to `/usr/sbin/blanket`. `lipc-get-prop com.lab126.winmgr isScreenSaverLayerWindowActive` returned `0` in the same awake observation.
 - Verification limits: the PID join was not repeated through `/proc/4524` in OBS-023. Getter value 0 is correlated with the unmapped window but does not formally define the property, prove it tracks this XID, or establish behavior while mapped. The observation does not test `HIDE`, mapping, Expose, panel state, suspend, or wake.
+
+## FACT-037 — The Phase 4B default guard build removes its X property writer
+
+- Classification: FACT
+- Source: StayInk Phase 4B source, host tests, and object-symbol audit
+- Repository / commit: current uncommitted StayInk workspace; Apache-2.0 project source
+- Evidence location: `tools/hide-guard/`, distilled in `docs/research/GUARD_WATCHDOG_VALIDATION.md`
+- Kindle model / firmware: host-only implementation evidence; target applicability UNKNOWN pending ARM/Linux build and no-write runs on the UI-identified Scribe / 5.19.5
+- Environment: arm64 macOS development host, AppleClang, 2026-08-15; no Kindle interaction
+- Confidence: high for the reviewed source, passing core tests, compatibility-header compilation, and inspected development-host objects; no target-binary/runtime confidence
+- Relevance: creates a structurally write-incapable artifact class for target identity/timer validation before any separately authorized `WM_NAME` experiment.
+- Evidence: the common transaction tests pass for exact ORIGINAL-to-HIDE construction, byte-exact saved-original restoration, no-NUL item counts, mismatch refusal, identity checks, watchdog transitions, and absolute deadline arithmetic. The Linux source has one compile-gated `XChangeProperty` call site. The write-disabled object has no `XChangeProperty` import; the explicitly write-enabled object has that import and neither object imports the prohibited X map/unmap/raise/lower/name helpers reviewed by `audit.sh`.
+- Verification limits: the Linux adapter was syntax-compiled on the macOS host using compatibility declarations, not built or run on Linux/ARM. No target hash, X connection, raw property validation, timerfd expiry, SSH-detachment, or restoration behavior has been observed. No result here authorizes a write-enabled target binary or HIDE mutation.

@@ -8,6 +8,8 @@ This directory keeps evidence separate from interpretations and open questions.
 - `HYPOTHESES.md` ranks testable candidate mechanisms.
 - `UNKNOWNS.md` records unresolved questions.
 - `DEVICE_PROBE.md` records the completed Phase 2A read-only target reconnaissance procedure and closure boundary.
+- `HIDE_METADATA_EXPERIMENT.md` records the unexecuted Phase 4A bounded `WM_NAME` experiment design and its authorization gate.
+- `GUARD_WATCHDOG_VALIDATION.md` records the Phase 4B guard implementation, host audit, and unexecuted target no-write validation gates.
 
 ## Classification
 
