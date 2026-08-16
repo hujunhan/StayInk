@@ -304,3 +304,16 @@ Repository evidence is pinned to a full commit SHA. Web and issue evidence is mu
 - License: target stock plugin license UNKNOWN; analysis records only the minimum identifiers, callback relationships, imported interfaces, and hash needed as behavioral evidence
 - Relevance: establishes that the blanket `screensaver` plugin consumes screensaver lifecycle events, prepares/renders screensaver content, and controls an X11 screensaver window, separating that presentation ownership from still-unattributed framebuffer/panel-update submission.
 - Limitations: the ELF is stripped and references an unsupplied `screensaver.so.1.0.dbg`. Static control flow does not prove which branch ran in a particular trial, the formal semantics of every event payload, who submits the E-Ink update after an X11 map/repaint, or whether suppressing the presentation callback preserves readiness and wake behavior.
+
+## OBS-017 — Phase 3E focused presentation-boundary analysis
+
+- Source: owner-supplied copies of target `/usr/lib/blanket/screensaver.so.1.0` and `/usr/lib/libblanket.so.1.0`, analyzed locally without execution
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: copied from the UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: local read-only dynamic-symbol, string, callback-table, and narrow ARM Thumb call-path inspection; no Kindle interaction
+- Evidence artifacts: `screensaver.so.1.0` SHA-256 `864a9987ea0c556f7e837d7433c265f862845973444cc74aeba3674ed77acf4e`; `libblanket.so.1.0` SHA-256 `30fb3dd09ee73ead89058d44a389a73b79c40d4192428e222c7fda9357459eef`
+- Evidence location: distilled in `docs/research/PRESENTATION_BOUNDARY_SEMANTICS.md` and FACT-029; proprietary files and full disassembly output must not be committed as source
+- License: target stock plugin/library licenses UNKNOWN; analysis records only the minimum identifiers, instruction relationships, side-effect classes, addresses, and hashes needed as behavioral evidence
+- Relevance: reconstructs exact screensaver entry, X11 bringup, Expose/repaint, normal exit, deinit, and whole-module unload semantics to distinguish presentation-only work from lifecycle side effects.
+- Limitations: both files are stripped and their referenced debug files were not supplied. Static control flow does not prove runtime branch selection, event-payload meaning, physical panel behavior, post-map side-effect necessity, or the safety of suppressing any operation. No state-changing experiment was designed or executed.

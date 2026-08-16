@@ -298,3 +298,10 @@ boundary. Intervention design still requires verified runtime control and
 recovery semantics, evidence that bypassing only visible presentation
 preserves readiness/kernel suspend and normal wake, and separation of the
 window action from downstream panel-refresh ownership.
+
+Phase 3E refines this result in
+`docs/research/PRESENTATION_BOUNDARY_SEMANTICS.md`: the common bringup helper is
+a narrow X11 map/raise operation, but its caller immediately records the
+plugin as presented and the resulting Expose path may perform deferred render
+and flash-trigger work. Whole-module unload is correspondingly too broad, and
+no coherent non-patching presentation-only runtime control is yet established.
