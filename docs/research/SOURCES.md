@@ -317,3 +317,80 @@ Repository evidence is pinned to a full commit SHA. Web and issue evidence is mu
 - License: target stock plugin/library licenses UNKNOWN; analysis records only the minimum identifiers, instruction relationships, side-effect classes, addresses, and hashes needed as behavioral evidence
 - Relevance: reconstructs exact screensaver entry, X11 bringup, Expose/repaint, normal exit, deinit, and whole-module unload semantics to distinguish presentation-only work from lifecycle side effects.
 - Limitations: both files are stripped and their referenced debug files were not supplied. Static control flow does not prove runtime branch selection, event-payload meaning, physical panel behavior, post-map side-effect necessity, or the safety of suppressing any operation. No state-changing experiment was designed or executed.
+
+## OBS-018 — Phase 3F focused non-patching presentation-control analysis
+
+- Source: owner-supplied copies of target `/usr/lib/blanket/screensaver.so.1.0` and `/usr/lib/libblanket.so.1.0`; pinned KindleModding Awesome/winmgr/blanket documentation; pinned KOReader Kindle launcher behavior
+- Repository / commit: target artifacts NOT APPLICABLE; KindleModding documentation `cf4457c4808636dac5e06d2f2761cb4632efe66d` (SRC-003); KOReader `2d505d1ea32ac875c18ed07b07d8bef78ae6954c` (SRC-004)
+- Observed: 2026-08-15 UTC
+- Device / firmware: target artifacts copied from the UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5; pinned documentation/community-code applicability to that target is UNKNOWN
+- Environment: offline read-only dynamic-symbol, string, and narrow ARM Thumb window-creation/Expose-path inspection plus pinned documentation review; no Kindle interaction
+- Evidence artifacts: `screensaver.so.1.0` SHA-256 `864a9987ea0c556f7e837d7433c265f862845973444cc74aeba3674ed77acf4e`; `libblanket.so.1.0` SHA-256 `30fb3dd09ee73ead89058d44a389a73b79c40d4192428e222c7fda9357459eef`
+- Evidence location: distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`, FACT-030, FACT-031, UNK-011, and HYP-002; proprietary files and full disassembly output must not be committed as source
+- License: target stock plugin/library licenses UNKNOWN; KindleModding documentation license recorded in SRC-003; KOReader is AGPL-3.0 and its bundled `wmctrl` is identified by KOReader as GPLv2; no external implementation source is copied into StayInk
+- Relevance: identifies the persistent metadata-named X11 window, distinguishes generic stock metadata/getters from target-verified controls, reconstructs the post-map Expose/flash race, and defines the read-only gate for a possible non-patching presentation experiment.
+- Limitations: the exact target `WM_NAME`, runtime X-server access, target Awesome rules, `HIDE` behavior, map/Expose timing, E-Ink result, suspend equivalence, and wake restoration remain unobserved. Generic documentation and behavior on other Kindle firmware do not establish Scribe 5.19.5 behavior. No state-changing experiment was designed or executed.
+
+## OBS-019 — Phase 3F target X11 query-tool availability
+
+- Source: direct target-device availability result supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment; KOReader state during the availability check UNKNOWN
+- Evidence location: distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md` and FACT-032
+- License: NOT APPLICABLE to the availability observation; the installed tools' provenance/licenses were not reported
+- Relevance: narrows the approved property-discovery gate to `xwininfo` and prevents an unjustified package install or unreviewed `wmctrl` substitution.
+- Limitations: no raw `command -v` output, exact path, version, hash, option inventory, X-server connection result, or window query output was supplied. Absence of `xprop` leaves arbitrary X-property values unobserved.
+
+## OBS-020 — Phase 3F first filtered X11 tree query
+
+- Source: direct target-device command result supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence, X display environment, and current blanket loaded-module list UNKNOWN; not a proven pure-stock baseline
+- Command: `xwininfo -root -tree 2>&1 | grep -F 'blanket_screensaver'`
+- Evidence location: distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md` and FACT-033
+- License: NOT APPLICABLE to the owner-supplied observation
+- Relevance: tests the exact static identifier while exposing a procedure ambiguity that must be resolved before treating zero matches as evidence.
+- Limitations: the command returned no output, but the filter also suppresses unrelated standard-error text. No unfiltered connection result or `com.lab126.blanket load` getter result was captured. The observation cannot distinguish X connection failure, unloaded module, absent window, different runtime title, or another mismatch.
+
+## OBS-021 — Phase 3F X root and blanket loaded-module checks
+
+- Source: direct target-device command output supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence UNKNOWN; not a proven pure-stock baseline
+- Commands: `xwininfo -root -stats 2>&1`; `lipc-get-prop com.lab126.blanket load`
+- Evidence location: distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md` and FACT-034
+- License: NOT APPLICABLE to the owner-supplied observation
+- Relevance: validates read-only X-server query access and the presence of `screensaver` in blanket's reported loaded-module list before broadening window-title discovery.
+- Limitations: a loaded-module name does not prove plugin initialization or window creation; root-window attributes do not identify child-window ownership; stock UI foreground does not establish the absence of all third-party background processes.
+
+## OBS-022 — Phase 3F bounded screensaver-window tree query
+
+- Source: direct target-device command output supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence UNKNOWN; not a proven pure-stock baseline
+- Command: `xwininfo -root -tree 2>&1 | grep -Ei 'L:SS|activeSS|screen.?saver|blanket|1860x2480'`
+- Evidence location: distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md` and FACT-035
+- License: NOT APPLICABLE to the owner-supplied observation
+- Relevance: resolves the exact target screensaver window identity, serialized Awesome metadata, XID, geometry, class display, and awake map state without changing X11 or Kindle state.
+- Limitations: the bounded filter also returned two unrelated full-screen windows. One snapshot does not establish XID persistence, property values unavailable through `xwininfo`, visual ownership, event timing, physical E-Ink behavior, suspend equivalence, or wake restoration.
+
+## OBS-023 — Phase 3F direct screensaver-XID and winmgr getter query
+
+- Source: direct target-device command output supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-15 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence UNKNOWN; not a proven pure-stock baseline
+- Commands: `xwininfo -id 0x400001 -stats -wm`; `lipc-get-prop com.lab126.winmgr isScreenSaverLayerWindowActive`
+- Evidence location: distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md` and FACT-036
+- License: NOT APPLICABLE to the owner-supplied observation
+- Relevance: directly confirms the candidate's title, addressability, map state, geometry, visual, WM hints, reported PID, and the correlated awake winmgr screensaver-layer getter value.
+- Limitations: the XID may change after plugin/process recreation. The prior PID-to-executable mapping was not repeated in this observation. Getter correlation does not establish formal semantics, mapped behavior, causality, physical presentation, suspend equivalence, or wake restoration.

@@ -1,15 +1,15 @@
 # Candidate Mechanisms
 
-These are untested research hypotheses, not designs. Both leave the sleep request and powerd suspend sequence intact in principle. Neither is approved for a device experiment yet.
+These are untested research hypotheses, not designs. Both leave the sleep request and powerd suspend sequence intact in principle. Neither is approved for a device experiment yet. Phase 3F prioritizes the non-patching presentation-only branch; framebuffer restoration is retained only as historical research context and is not the current investigation direction.
 
 ## Ranking
 
 | Rank | Candidate | Safety | Simplicity | Evidence | Genuine-suspend compatibility |
 | --- | --- | --- | --- | --- | --- |
-| 1 | restore the pre-sleep panel image in the observable pre-suspend window | medium | medium | medium | likely, unverified |
-| 2 | suppress only the blanket screensaver module for the transition | low–medium | medium | low–medium | plausible, unverified |
+| 1 | preserve the blanket lifecycle but request that Awesome hide its persistent screensaver window before stock map | low–medium | medium | medium-low | plausible, unverified |
+| 2 | restore the pre-sleep panel image in the observable pre-suspend window | medium | medium | medium | likely, unverified; deferred |
 
-Candidate 1 ranks first because it can be one-shot and avoids changing stock component lifecycle. It still requires a direct MTK display update, so it is not low risk. Candidate 2 uses a control demonstrated by KOReader but could disturb stock UI state and wake restoration.
+Candidate 1 ranks first because it is the highest-level non-patching boundary currently known, preserves the stock plugin lifecycle and internal presented state in principle, and can be staged before the post-map Expose race. Target Awesome behavior and rollback remain unverified. Candidate 2 requires a direct MTK display update and is deferred by the Phase 3F scope.
 
 ## HYP-001 — One-shot framebuffer restoration before suspend
 
@@ -34,16 +34,16 @@ Candidate 1 ranks first because it can be one-shot and avoids changing stock com
 - Classification: INFERENCE
 - Kindle model / firmware: Scribe / UNKNOWN
 - Confidence: low
-- Status: untested
+- Status: read-only identity gate passed on the observed Scribe 5.19.5; reversible runtime trial not yet designed or approved
 
-1. **Mechanism:** Keep the native blanket `screensaver` module and its lifecycle callback loaded, but temporarily withhold only coherent X11 window/layer presentation around a sleep transition, then restore normal presentation eligibility on wake, without writing any powerd property other than the user's normal request.
-2. **Supporting evidence:** FACT-013 maps `com.lab126.blanket` to `/usr/sbin/blanket` on the target Scribe and records a literal `screensaver` command-line argument; FACT-024 through FACT-027 establish the parser, fixed plugin path, dynamic ABI, and canonical file; FACT-028 establishes that this plugin consumes `goingToScreenSaver`, prepares/renders screensaver content, and brings up the `blanket_screensaver` X11 window; FACT-029 establishes that the common bringup helper is a narrow X11 map/raise operation inside a broader stateful callback and that whole-module unload removes callbacks and destroys plugin state; FACT-012 shows KOReader can unload/reload a blanket screensaver module in a conditional launch mode; FACT-003 and FACT-015 separate screen-saver entry from readiness in KOReader environments; SRC-009 reports lock continuing without visible replacement when modified stock resources failed to resolve.
-3. **Assumptions:** a future control can withhold the X11 map while keeping plugin presentation state coherent; post-map Expose side effects are presentation-only or can be preserved safely; suppressing presentation does not gate readiness; recovery is sufficient for normal wake; downstream X11/display code does not independently replace the panel; Special Offers/passcode variants do not use a different actor.
-4. **Unknowns:** physical panel-update ownership, a non-patching narrow runtime control, necessity of deferred Expose/flash/cache/metric side effects, timing, persistence, recovery behavior, and behavior across firmware and Scribe generations.
+1. **Mechanism:** Keep the native blanket `screensaver` module and its lifecycle callback loaded. If target read-only evidence validates the exact persistent window metadata and Awesome's title convention, temporarily add `HIDE` to an otherwise byte-equivalent title before stock map, then restore the byte-exact original title on wake. Do not write a powerd property or alter the plugin's own presentation state.
+2. **Supporting evidence:** FACT-013 maps `com.lab126.blanket` to `/usr/sbin/blanket` on the target Scribe and records a literal `screensaver` command-line argument; FACT-024 through FACT-027 establish the parser, fixed plugin path, dynamic ABI, and canonical file; FACT-028 and FACT-029 establish plugin lifecycle/content work and the narrow X11 map boundary; FACT-030 establishes the statically retained screensaver window; FACT-035 resolves its target runtime identity as an unmapped full-screen `L:SS` / `N:screenSaver` client with exact title metadata; SRC-003 documents a generic Kindle Awesome `HIDE` title flag; FACT-031 shows why a pre-map control is preferable to reacting after map; FACT-003 and FACT-015 separate screen-saver entry from readiness in KOReader environments; SRC-009 reports lock continuing without visible replacement when modified stock resources failed to resolve.
+3. **Assumptions:** Scribe 5.19.5 honors `HIDE` on this window; the exact original title can be restored; a hidden-but-mapped screensaver window leaves plugin state coherent; it avoids visible Expose/flash work or otherwise preserves the Notebook; suppression does not gate readiness; recovery is sufficient for normal wake; Special Offers/passcode variants do not use a different actor.
+4. **Unknowns:** target Awesome behavior after adding/removing `HIDE`, whether hidden mapping receives Expose/flash work, XID persistence, physical panel result, timing, restoration, wake behavior, and applicability across firmware and Scribe generations.
 5. **Risk of preventing real suspend:** medium. The module may participate in acknowledgements or state transitions even though KOReader treats it as display-side.
 6. **Risk of interfering with wake:** high. Inconsistent plugin/window state or failure to restore normal visibility could leave the lock screen or normal UI unavailable.
 7. **Risk of persistent system-state modification:** low only if a future presentation control is truly runtime-only. The stock plugin may still update its ordinary content-rotation/cache state. No init configuration, rootfs file, or stock cache behavior may be modified by the control itself.
-8. **Smallest safe test:** No state-changing trial is justified yet. A naïve no-op of `blanket_image_window_bringup` would still make its caller record presentation state 1, while whole-module unload removes lifecycle callbacks and destroys state. A later approved trial requires a non-patching control that withholds map/layer visibility while leaving state coherent, changes one variable for one non-sensitive button cycle, and has independent timed/operator recovery. Success additionally requires control-equivalent suspend statistics/kernel PM evidence and full normal UI restoration.
+8. **Smallest safe test:** The read-only identity gate in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md` has passed. The next step is a separate design review—not execution—for one bounded title-metadata trial on a non-sensitive Notebook page. It may change only the title metadata, must have exact and timed restore plus independent operator recovery, and must preserve ordinary powerd lifecycle. Success additionally requires the original Notebook image to remain visible, control-equivalent suspend statistics/kernel PM evidence, normal physical wake, and full Notebook restoration.
 9. **Falsified by:** withholding map/layer visibility suppresses readiness or low-power entry; another component still replaces the panel; required post-map side effects cannot be preserved; normal visibility cannot be restored; or any effect persists after reboot.
 10. **Read-only / reversible:** discovery can be read-only. Loader `unload`/`load` and any X11 visibility operation are state-changing. Whole-module unload is now classified as too broad for a presentation-only test; no persistent fallback is acceptable.
 

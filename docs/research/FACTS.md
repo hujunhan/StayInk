@@ -393,3 +393,94 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Relevance: identifies the narrowest semantic presentation boundary and shows why neither a naïve bringup no-op nor whole-module unload yet qualifies as a safe presentation-only StayInk experiment.
 - Evidence: the `goingToScreenSaver` callback emits metrics, updates an ASR message argument, selects a mode, performs content/LIPC/Cairo/cache work, then calls `blanket_image_window_bringup` when plugin presentation state is zero. The common helper checks X11 map state, selects input, calls `XMapRaised` and `XFlush`, and records the window; it performs no draw, LIPC, file, win-manager, framebuffer, or ioctl operation. The caller ignores the helper return and immediately stores presentation state 1. Mapping can cause the plugin's X11 Expose path to perform deferred render and flash-trigger work. `outOfScreenSaver` conditionally unmaps based on plugin state, clears state/mode, and sends `unmap_screensaver` plus `nonDtcpScreensaverOut`; `exitingScreenSaver` only emits metrics. Whole-module unload unsubscribes callbacks, invokes deinit, destroys X11/Cairo/content state, closes the shared object, and frees its loader record.
 - Verification limits: static evidence does not establish which conditional render branch ran in a particular trial, whether an X11 map causes the physical replacement, whether post-map side effects are required, whether teardown after a skipped map is runtime-safe, or whether any unmodified narrow control exists. The first reversible target experiment remains blocked.
+
+## FACT-030 — The screensaver plugin creates one metadata-named persistent X11 window
+
+- Classification: FACT
+- Source: OBS-018
+- Repository / commit: NOT APPLICABLE for the target artifacts; related generic Awesome documentation is SRC-003 at `cf4457c4808636dac5e06d2f2761cb4632efe66d`
+- Evidence location: target `screensaver.so.1.0` init path and target `libblanket.so.1.0` `blanket_image_get_window` path, distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only static analysis; no Kindle interaction and no copied artifact execution or modification
+- Confidence: high for the identifier, metadata-builder calls, X11 creation/title/protocol/property calls, stored XID, normal map/unmap versus deinit-destroy split, and the OBS-022 runtime title; no cross-cycle XID-reuse confidence
+- Relevance: identifies the exact X11 object and metadata boundary that a future non-patching presentation control would have to observe and restore.
+- Evidence: the plugin init path requests a window with identifier `blanket_screensaver`. The relevant common-library path obtains a screen-saver base name, adds that identifier, flash-on-show mode 3, flash-on-hide mode 3, an after-show damage timeout, orientation value 1, and custom property `loc_module`, serializes them, creates the X11 window, stores the result with `XStoreName`, installs `_NET_WM_PING` and `_NET_WM_PID`, and retains the XID. Normal lifecycle paths map and unmap the window; deinit destroys it.
+- Verification limits: OBS-022 later resolves the displayed title, layer, role, serialized module field, ID, empty displayed class field, geometry, and awake map state for one runtime snapshot. Formal `FH:F`/`FS:F` semantics, the internal-to-serialized name transformation, cross-cycle XID reuse, Awesome's reaction to title changes, and behavior on any other model or firmware remain unknown. The `activeSS` literal belongs to another common-library window mode and does not identify this plugin's role.
+
+## FACT-031 — The screensaver Expose callback paints before its deferred flash-trigger/render branches
+
+- Classification: FACT
+- Source: OBS-018
+- Repository / commit: NOT APPLICABLE; local static analysis of owner-supplied target libraries
+- Evidence location: target `screensaver.so.1.0` X11 callback beginning at virtual address `0x407c`, distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only static analysis; no Kindle interaction and no copied artifact execution or modification
+- Confidence: high for the direct call order; no runtime scheduling or physical-panel confidence
+- Relevance: establishes that reacting only after observing a mapped screensaver window may already be too late to prevent presentation work.
+- Evidence: after `XMapRaised` and `XFlush`, an asynchronous final-Expose callback validates the Cairo objects and calls `cairo_paint`. If either deferred content flag is set, the callback then delays, creates a win-manager flash trigger, performs the deferred render, and clears the flag. Thus the base paint precedes the deferred flash-trigger call, while deferred rendering follows that trigger.
+- Verification limits: static evidence does not establish when the X server schedules Expose, which deferred branch runs, whether an external unmap races before or after these calls, whether unmap damages/repaints the underlying Notebook window, or when physical E-Ink pixels change.
+
+## FACT-032 — The target provides `xwininfo` but not `xprop`
+
+- Classification: FACT
+- Source: OBS-019
+- Repository / commit: NOT APPLICABLE; direct target tool-availability report
+- Evidence location: owner-supplied Phase 3F availability result, distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment; KOReader state at the time of the check UNKNOWN
+- Confidence: high for reported command availability; no exact pathname, version, option-set, or runtime-query confidence
+- Relevance: permits an `xwininfo`-only read-only identity/map-state observation while explicitly leaving arbitrary X properties unavailable.
+- Evidence: the device owner reports that `xwininfo` is present and `xprop` is absent.
+- Verification limits: this does not establish `xwininfo` provenance or supported options, X-server connection permission, successful window discovery, title completeness, map state, `WM_CLASS`, `_NET_WM_PID`, or any presentation-control behavior.
+
+## FACT-033 — The first exact-title X11 tree filter returned no target line
+
+- Classification: FACT
+- Source: OBS-020
+- Repository / commit: NOT APPLICABLE; direct target query result
+- Evidence location: owner-supplied Phase 3F result, distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence and blanket loaded-module list at query time UNKNOWN; not a proven pure-stock baseline
+- Confidence: high that the filtered command returned no output; no confidence that this proves window absence
+- Relevance: identifies two missing controls—X-server connection validation and current screensaver-module presence—before interpreting window discovery.
+- Evidence: `xwininfo -root -tree 2>&1 | grep -F 'blanket_screensaver'` returned no result while the owner reports the stock Amazon UI was in the foreground rather than KOReader.
+- Verification limits: `grep` also removed X connection errors not containing the search string. The result does not establish that `xwininfo` connected, that the plugin was loaded, that the window existed, or that its runtime title contained the static identifier. It is not a negative ownership finding.
+
+## FACT-034 — X root access works and blanket reports `screensaver` loaded in the stock-UI foreground condition
+
+- Classification: FACT
+- Source: OBS-021
+- Repository / commit: NOT APPLICABLE; direct target query results
+- Evidence location: owner-supplied Phase 3F output, distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence UNKNOWN; not a proven pure-stock baseline
+- Confidence: high for the reported X root attributes and blanket getter value
+- Relevance: eliminates X connection failure and an absent `screensaver` name in blanket's loaded-module getter as explanations for the first empty exact-string filter.
+- Evidence: `xwininfo -root -stats` successfully returned root XID `0x50`, geometry 1860x2480, depth 8, `StaticGray`, `InputOutput`, `IsViewable`, and no override redirect. `lipc-get-prop com.lab126.blanket load` returned `screensaver langpicker blankwindow usb`.
+- Verification limits: the getter establishes blanket's reported module list, not successful plugin initialization or window creation. Root access does not identify the plugin window. The combined result does not prove that a target window exists, what it is titled, or why the literal `blanket_screensaver` was absent from the filtered tree output.
+
+## FACT-035 — The target screensaver window is an unmapped full-screen `L:SS` / `N:screenSaver` client
+
+- Classification: FACT
+- Source: OBS-022
+- Repository / commit: NOT APPLICABLE; direct target X11 tree query
+- Evidence location: owner-supplied Phase 3F output, distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence UNKNOWN; not a proven pure-stock baseline
+- Confidence: high for the exact displayed tree line and scoped interpretation
+- Relevance: establishes the exact persistent presentation object and a complete textual restore candidate before any future title-metadata experiment is designed.
+- Evidence: the bounded tree query returned XID `0x400001` with title `L:SS_N:screenSaver_O:U_FH:F_module:screensaver_ID:blanket-screensaver_FS:F`, empty displayed class parentheses, geometry 1860x2480+0+0, and `MapState=IsUnMapped`. This directly establishes layer `SS`, role `screenSaver`, module value `screensaver`, and runtime ID `blanket-screensaver` for this snapshot. The original exact-string query failed because the static input literal contains an underscore while the serialized runtime ID contains a hyphen.
+- Verification limits: this single awake snapshot does not establish XID reuse, exact arbitrary X properties, formal `FH:F`/`FS:F` meaning, current visual foreground ownership, mapping/Expose timing, Awesome's behavior after a title change, physical panel effects, suspend equivalence, or wake safety.
+
+## FACT-036 — Direct XID metadata ties the screensaver window to blanket PID 4524
+
+- Classification: FACT
+- Source: OBS-023
+- Repository / commit: NOT APPLICABLE; direct target X11 and LIPC getter results
+- Evidence location: owner-supplied Phase 3F output, distilled in `docs/research/NON_PATCHING_PRESENTATION_CONTROL.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment with stock Amazon UI in the foreground, not KOReader; KOReader-related background publisher/process presence UNKNOWN; not a proven pure-stock baseline
+- Confidence: high for direct XID attributes, reported PID, and getter value; medium-high for joining PID 4524 to the earlier process mapping within the observed environment
+- Relevance: closes the read-only identity/ownership gate needed before a presentation-only runtime experiment can be designed.
+- Evidence: `xwininfo -id 0x400001 -stats -wm` reconfirmed the exact title, 1860x2480 geometry, depth-8 `StaticGray` visual, `InputOutput`, `IsUnMapped`, and no override redirect. It reported no conventional window-manager hints, desktop 0, and process ID 4524. FACT-013 previously maps PID 4524, the `com.lab126.blanket` owner, to `/usr/sbin/blanket`. `lipc-get-prop com.lab126.winmgr isScreenSaverLayerWindowActive` returned `0` in the same awake observation.
+- Verification limits: the PID join was not repeated through `/proc/4524` in OBS-023. Getter value 0 is correlated with the unmapped window but does not formally define the property, prove it tracks this XID, or establish behavior while mapped. The observation does not test `HIDE`, mapping, Expose, panel state, suspend, or wake.
