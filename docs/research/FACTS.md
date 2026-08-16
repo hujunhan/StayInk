@@ -497,3 +497,16 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Relevance: creates a structurally write-incapable artifact class for target identity/timer validation before any separately authorized `WM_NAME` experiment.
 - Evidence: the common transaction tests pass for exact ORIGINAL-to-HIDE construction, byte-exact saved-original restoration, no-NUL item counts, mismatch refusal, identity checks, watchdog transitions, and absolute deadline arithmetic. The Linux source has one compile-gated `XChangeProperty` call site. The write-disabled object has no `XChangeProperty` import; the explicitly write-enabled object has that import and neither object imports the prohibited X map/unmap/raise/lower/name helpers reviewed by `audit.sh`.
 - Verification limits: the Linux adapter was syntax-compiled on the macOS host using compatibility declarations, not built or run on Linux/ARM. No target hash, X connection, raw property validation, timerfd expiry, SSH-detachment, or restoration behavior has been observed. No result here authorizes a write-enabled target binary or HIDE mutation.
+
+## FACT-038 — Phase 4B target no-write identity and detached-watchdog validation passed
+
+- Classification: FACT
+- Source: owner-supplied Phase 4B target output
+- Repository / commit: NOT APPLICABLE; direct target execution of the locally built no-write guard
+- Evidence location: owner-supplied output, distilled in `docs/research/GUARD_WATCHDOG_VALIDATION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: current observed Véra/KPM environment; stock screensaver window awake and unmapped; not a proven pure-stock baseline
+- Confidence: high for the reported guard validations, timerfd expiry, unchanged property, and child exit; medium-high for the owner-reported symbol-audit and hash-comparison pass because the exact hash value was not supplied
+- Relevance: completes the target runtime no-write gate for the bounded HIDE guard without exercising HIDE, sleep, or any X property mutation.
+- Evidence: the ordinary dry run validated XID `0x400001`, blanket PID 4524 and executable identity, 1860x2480 depth-8 `StaticGray`, `IsUnMapped`, and the exact XA_STRING/8 74-byte original `WM_NAME`. It calculated the expected 79-byte HIDE form with no C terminator, retained byte-exact restore metadata, and confirmed `CLOCK_BOOTTIME` timerfd support. A detached watchdog armed at absolute boottime `2679189.688463169`, survived launcher detachment, reconnected at expiry, observed `ORIGINAL`, performed no write, and exited; PID 21211 was absent afterward. A second dry run returned the same original-property result.
+- Verification limits: the trial did not test HIDE, XChangeProperty, Awesome reaction, screensaver presentation, suspend, panel preservation, or wake. The erroneous D-Bus `NameHasNoOwner` result came from another machine and is not target evidence; current target D-Bus ownership must be rechecked before any mutation. The owner reports that the copied ARM no-write binary passed the symbol audit and host/target hash comparison, but the exact hash and audit output were not supplied for the research corpus.

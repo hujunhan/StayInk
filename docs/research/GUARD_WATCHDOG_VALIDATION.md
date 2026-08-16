@@ -233,17 +233,32 @@ log under `/mnt/us`. The audited binary has no X property mutation symbol.
 - Host core tests: **FACT — PASS** on the stated development host.
 - Host source/object audit: **FACT — PASS** within the reviewed source and
   compatibility-compiled objects.
-- ARM/Linux binary build and symbol/hash audit: **UNKNOWN — not yet performed**.
-- Target ordinary no-write dry run: **UNKNOWN — not executed**.
-- Target watchdog detachment/expiry no-write run: **UNKNOWN — not executed**.
-- Target `CLOCK_BOOTTIME` readiness: **UNKNOWN** until the ordinary dry run;
-  expiry behavior remains UNKNOWN until the watchdog dry run.
+- ARM/Linux no-write binary build, symbol audit, and host/target hash
+  comparison: **FACT — owner-reported PASS**. The exact hash value was not
+  supplied for inclusion in the research corpus.
+- Target ordinary no-write dry run: **FACT — PASS** on the observed Scribe / 5.19.5.
+  The guard validated XID `0x400001`, PID 4524, 1860x2480 depth-8
+  `StaticGray`, `IsUnMapped`, the expected identity, and an XA_STRING/8
+  `WM_NAME` with 74 items. It calculated a 79-item HIDE value without a C
+  terminator, retained the captured restore metadata, reported target
+  `CLOCK_BOOTTIME` timerfd support, and ended `NO_WRITE dry-run-build`.
+- Target watchdog detachment/expiry no-write run: **FACT — PASS** on the same
+  target. The detached child logged `ARMED pid=21211
+  deadline_boottime=2679189.688463169`, expired while the Kindle remained
+  awake, reconnected, observed `CURRENT=ORIGINAL`, logged
+  `NO_WRITE current=ORIGINAL`, and exited. `/proc/21211` was absent afterward.
+- Target post-watchdog no-write dry run: **FACT — PASS** with the same exact
+  identity/property results, establishing that this validation left the
+  original title unchanged.
+- D-Bus `NameHasNoOwner` output reported immediately before these results is
+  **not target evidence**: the operator identified it as a command run on a
+  different machine by mistake. A fresh target D-Bus-owner check remains a
+  precondition of any future mutation.
 
-The code is not yet safe enough to request authorization for real HIDE. First
-produce and audit the ARM no-write binary, then separately authorize and run
-the two no-write target validations above. Only their successful evidence can
-open review of a separately hashed write-enabled binary and the Phase 4A
-mutation procedure.
+The target no-write runtime gate is complete. Real HIDE remains unauthorized.
+Before requesting that separate authorization, build, audit, and hash-pin the
+distinct write-enabled artifact and review the exact Phase 4A invocation,
+rollback, and cleanup.
 
 ## Remaining failure modes
 

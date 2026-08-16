@@ -501,11 +501,16 @@ The experiment is conceptually bounded to one property and has a credible
 rollback architecture. The read-only target evidence is sufficient to finish
 this design.
 
-Execution should **not yet be authorized**. Phase 4B now provides reviewed
-source and passing host-core tests, but no audited ARM/Linux no-write binary or
-target dry run exists, and target `CLOCK_BOOTTIME`/timerfd readiness has not
-been proven. Using `wmctrl` as a shortcut would broaden or obscure the mutation
-and does not satisfy this design.
+Execution remains **unauthorized**. Phase 4B now provides reviewed source,
+passing host-core tests, and passing ordinary and detached-watchdog no-write
+target runs. Those target runs establish exact runtime identity/property
+validation, target `CLOCK_BOOTTIME` timerfd support, detached expiry-side
+reconnection, refusal to restore ORIGINAL, clean child exit, and an unchanged
+title. The owner subsequently reported that the transferred ARM no-write
+artifact passed its symbol audit and host/target hash comparison, although the
+exact hash was not supplied for this corpus. No distinct write-enabled
+artifact has been audited or hash-pinned. Using `wmctrl` as a shortcut would
+broaden or obscure the mutation and does not satisfy this design.
 
 Authorization may be reconsidered only after the remaining Phase 4B review
 shows that the helper:
@@ -514,7 +519,8 @@ shows that the helper:
   its exact inverse, logs, and its owned timer/child cleanup;
 - preserves the already-passing host mismatch/compare-before-write tests and
   passes disposable-X restore tests;
-- passes a target no-write dry run and awake-only timer self-test;
-- leaves no process behind after the dry run;
+- retains the passing target no-write dry-run and awake-only detached-watchdog
+  evidence;
+- preserves the recorded result that no watchdog process remained;
 - has exact manual invocation, rollback, and cleanup commands reviewed before
   the title-changing trial.
