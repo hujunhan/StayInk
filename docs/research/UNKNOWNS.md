@@ -79,3 +79,23 @@
 - Relevance: support cannot be inferred across devices or releases.
 - Current evidence: OBS-001 establishes one UI-identified Kindle Scribe on firmware 5.19.5 with passcode enabled, no Special Offers, no magnetic cover, Véra, KPM, and an active KOReader publisher. OBS-002 adds one controlled KOReader button trace on that same target. Its generation and physical model number remain unknown, no stock control is complete, and applicability to another model, firmware, UI, or observer transport remains unestablished.
 - Resolution criteria: maintain a device/firmware matrix with repeated event, display, low-power, and wake observations for each claimed supported combination.
+
+## UNK-009 — What are the remaining semantics of powerd's `g_is_screensaver_drawn` state?
+
+- Classification: UNKNOWN
+- Sources: SRC-003, SRC-004, SRC-006, OBS-006, OBS-007, OBS-008, OBS-009, OBS-010, OBS-011
+- Model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5 for the observed log; other applicability UNKNOWN
+- Confidence: high that powerd owns the observed set-to-one, reset, and consumer paths; high that the remaining semantic/presentation attribution gap is real
+- Relevance: this state may expose the presentation-completion boundary StayInk needs, or it may instead be diagnostic or coupled to suspend progression.
+- Current evidence: FACT-018 shows powerd logging the value 1 during a wake-side `SUSPENDED -> SCREEN SAVER` transition. FACT-019 identifies the embedded diagnostics, and FACT-021 establishes that powerd itself stores 1 after its `goingToScreenSaver` send helper returns, has two internal zero-store paths, and later reads the same global in a path tied to low-power frontlight handling. FACT-022 establishes that KPP's specifically named `ApplicationModule::screenSaverHandler()` subscribes to entry and exit events and performs engagement-metrics bookkeeping, not a demonstrated presentation acknowledgement. FACT-023 shows that the copied blanket launcher delegates loader parsing and event dispatch to `libblanket.so.1.0`; it exposes no direct completion report to powerd. The exact identifier remains absent from the reviewed pinned-source scope. Set/reset ownership is resolved to powerd for this binary; the field's intended meaning, transition coverage, lifetime, and any causal relationship to suspend remain unestablished.
+- Resolution criteria: a separately reviewed read-only runtime correlation must show whether the field tracks only powerd transition bookkeeping/frontlight selection or any window visibility, image preparation, framebuffer/update completion, or suspend-readiness boundary.
+
+## UNK-010 — Which downstream component submits the panel update after the screensaver plugin presents its window?
+
+- Classification: UNKNOWN
+- Sources: SRC-003, SRC-004, OBS-001, OBS-011, OBS-012, OBS-013, OBS-014, OBS-015, OBS-016
+- Model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5 for the copied artifacts; other applicability UNKNOWN
+- Confidence: high that name/path/loading and plugin content/window presentation are resolved; high that physical update submission and safe control semantics remain unresolved
+- Relevance: the plugin callback is now the narrowest demonstrated stock content/window presentation boundary, but StayInk must know whether omitting that boundary leaves the panel unchanged without disrupting genuine suspend or wake.
+- Current evidence: FACT-023 through FACT-027 establish the launcher, loader library, fixed module path, and canonical plugin. FACT-028 establishes that `screensaver.so.1.0` consumes `goingToScreenSaver`, prepares/renders default or book-cover content, creates a Cairo Xlib surface for `blanket_screensaver`, and calls blanket window bring-up/teardown helpers. The plugin does not directly import a framebuffer/HWTCON/MXCFB or E-Ink update API. `libblanket` and downstream X11/Lab126 graphics code retain display capabilities, but no reviewed call attributes the physical update request.
+- Resolution criteria: a narrowly reviewed read-only observation must correlate the plugin window/layer transition or an existing display log with the visible replacement, or focused static analysis must identify the exact downstream X11/Lab126 graphics update path. Separately, any future intervention design requires proven runtime recovery and evidence that omitting only presentation preserves `readyToSuspend`, kernel `mem` suspend, normal wake restoration, and wake paths in scope.

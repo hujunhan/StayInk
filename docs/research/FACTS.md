@@ -237,3 +237,146 @@ These are deliberately narrow observations. None of them, alone or together, pro
 - Evidence: `goingToScreenSaver 2` was followed by readiness payloads `10, 8, 7, 7, 6, 2, 1`; kernel suspend entry followed the final payload by 9.958 seconds. The kernel reported 117.998 seconds suspended, then exited 0.017 seconds before `wakeupFromSuspend 118`; `outOfScreenSaver` and `exitingScreenSaver` followed. Listener exit status was 0, observer logs had no errors, and all recorded observer PIDs were gone.
 - Timer observation: observer start-to-finish was 478 seconds for `/bin/sleep 360`; subtracting the kernel-reported 117.998-second suspend yields approximately 360.002 seconds. In this trial the timer did not advance materially during suspend.
 - Verification limits: post-trial suspend success was 82 with zero supplied failure fields, but no immediately preceding counter snapshot was supplied, so no counter delta is claimed. The supplied kernel timestamps independently place the complete transaction inside the observer window. Formal event-payload meanings, attempt-2 visual timing, renderer/panel ownership, framebuffer retention, electrical power, and pure-stock applicability remain UNKNOWN.
+
+## FACT-018 — KPPMainApp reacts to a wake-side screensaver-stop transition on the target
+
+- Classification: FACT
+- Source: OBS-006
+- Repository / commit: NOT APPLICABLE; direct target-device observation
+- Evidence location: Phase 3A filtered read of the existing `/var/log/messages`, distilled in `docs/research/DISPLAY_PATH_ATTRIBUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: Véra/KPM; KOReader has been present; not a proven pure-stock boot or the accepted Baseline B attempt-2 interval
+- Confidence: high for the logged wake-side ordering and named KPPMainApp handlers; low for undocumented field semantics
+- Relevance: confirms that KPPMainApp contains target-active screensaver lifecycle consumers, while preserving the distinction between lifecycle observation and sleep-screen presentation ownership.
+- Evidence: at local-wall-clock-like `23:10:11.522`, powerd logged `SUSPENDED -> SCREEN SAVER` and the literal field `g_is_screensaver_drawn = (1)`; at `23:10:11.546` it logged `SCREEN SAVER -> ACTIVE`; and at `23:10:11.582` it sent `outOfScreenSaver`. At `23:10:11.595`, KPPMainApp logged receipt of `onOutOfScreenSaverEvent`, notification of an observer on screensaver stop, and `NotebooksControllerImpl::OnScreenSaverStop`. Other KPPMainApp clients then logged that the screensaver was turning off or that `inScreenSaver` became 0.
+- Verification limits: the log does not identify the `com.lab126.KPPMainApp.ScreenSaverListener` publisher as the delivery mechanism, and it does not show KPPMainApp handling screensaver entry, choosing content, creating a window, writing pixels, or submitting a panel update. The earlier `UIManager:updateView` messages have no displayed-content or refresh-owner attribution. The powerd variable name and value report powerd's internal terminology, not proof that powerd or another named process rendered or refreshed the panel.
+
+## FACT-019 — The target powerd binary embeds screensaver-drawn state and reset diagnostics
+
+- Classification: FACT
+- Source: OBS-007
+- Repository / commit: NOT APPLICABLE; direct target-device static observation
+- Evidence location: filtered `strings /usr/bin/powerd` output, distilled in `docs/research/SCREENSAVER_DRAWN_ATTRIBUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: Véra/KPM; awake, read-only static inspection; not a proven pure-stock boot
+- Confidence: high for literal strings in the observed executable; medium for their module-level relationship; no call-graph confidence
+- Relevance: makes powerd the strongest owner/reset candidate and narrows the next inspection toward the set-to-true trigger and any cross-component completion interface.
+- Evidence: `/usr/bin/powerd` contains the literal diagnostics `g_is_screensaver_drawn = (%d)` and `screensaver_drawn is getting set to false`, both labelled with a `powerd:low_temp_state` context. It also contains `system/daemon/powerd/BLANKET_NAME`, `system/daemon/powerd/BLANKET_LOAD`, `goingToScreenSaver`, `readyToSuspend`, and low-temperature frontlight-management diagnostics.
+- Verification limits: printable-string presence does not prove that a path executed, that the reset diagnostic directly surrounds an assignment, or that nearby strings share a caller. No string showed the set-to-true path. The blanket configuration keys do not prove that blanket reports draw completion, and the event-name proximity does not prove the field gates `readyToSuspend` or kernel suspend.
+
+## FACT-020 — KPPMainAppV2 contains a named screensaver handler and readiness strings
+
+- Classification: FACT
+- Source: OBS-008
+- Repository / commit: NOT APPLICABLE; direct target-device static observation
+- Evidence location: filtered strings from the three remaining candidate binaries, distilled in `docs/research/SCREENSAVER_DRAWN_ATTRIBUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: Véra/KPM; awake, read-only static inspection; not a proven pure-stock boot
+- Confidence: high for the literal strings and local demangling; no call-graph or runtime confidence
+- Relevance: strengthens KPPMainApp as a screensaver lifecycle participant and makes its handler a focused static-inspection boundary, without attributing display completion or the powerd field.
+- Evidence: `/app/bin/KPPMainAppV2` contains the mangled C++ symbol `_ZN3kpp3app17ApplicationModule18screenSaverHandlerEv`, which locally demangles to `kpp::app::ApplicationModule::screenSaverHandler()`. It also contains `readyToSuspend`, `screenSaver`, and `screenSaverTimeout`. The approved pattern produced no matching line for `/usr/sbin/blanket` or `/usr/bin/awesome`.
+- Verification limits: the handler name does not define whether it handles entry, exit, image selection, presentation, or acknowledgement. String co-presence does not connect it to `readyToSuspend` or powerd. KPP's matched snippet-thumbnail and TOC draw-completion diagnostics explicitly concern those content operations; the generic clear-redraw diagnostic has no screensaver attribution. No selected match in blanket/Awesome does not prove that those processes lack the behavior.
+
+## FACT-021 — Powerd writes its screensaver-drawn global after sending `goingToScreenSaver`
+
+- Classification: FACT
+- Source: OBS-010
+- Repository / commit: NOT APPLICABLE; local static analysis of an owner-supplied target binary
+- Evidence location: target `powerd` ARM Thumb code around virtual addresses `0x29726`–`0x29778`, `0x29d48`–`0x29d6c`, and `0x29e78`–`0x29e9a`, distilled in `docs/research/SCREENSAVER_DRAWN_ATTRIBUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only analysis of the copied, stripped `/usr/bin/powerd`; SHA-256 recorded in OBS-010
+- Confidence: high for the static instruction, global-address, string-reference, and imported-call relationships; no runtime-execution or formal-semantic confidence
+- Relevance: resolves set-to-true ownership and shows that the field is not an acknowledgement supplied by blanket, winmgr/Awesome, or KPPMainApp.
+- Evidence: one powerd path formats and emits the `goingToScreenSaver` LIPC event with an integer payload through `LipcNewEvent`, `LipcAddIntParam`, and `LipcSendEvent`. After that send helper returns, powerd stores integer `1` at global address `0x65814` and logs `g_is_screensaver_drawn = (1)`. A separate powerd path logs `screensaver_drawn is getting set to false` and stores `0` to the same address; another path also stores `0` there and logs the generic value diagnostic. A later state-machine branch reads the same global and selects between two calls into an internal path containing the diagnostic `Device is in low power state. Changing flIntensity`.
+- Verification limits: static order does not define whether `LipcSendEvent` waits for any subscriber work, why powerd names the flag “drawn,” or which transitions reach each store. The set-to-one path subsequently may call `device_can_suspend`, but the field is not passed to that call and instruction ordering alone does not establish a suspend gate. No setter site contains a framebuffer write, window/layer operation, E-Ink update request, or external presentation-completion callback.
+
+## FACT-022 — KPP's named application-module screensaver handler is an event-metrics consumer
+
+- Classification: FACT
+- Source: OBS-010
+- Repository / commit: NOT APPLICABLE; local static analysis of an owner-supplied target binary
+- Evidence location: target `KPPMainAppV2` dynamic symbols and ARM Thumb code for `kpp::app::ApplicationModule::registerScreenSaverListener()` at `0x0110a8f4` and `screenSaverHandler()` at `0x01107308`, distilled in `docs/research/SCREENSAVER_DRAWN_ATTRIBUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only analysis of the copied, stripped `/app/bin/KPPMainAppV2`; SHA-256 recorded in OBS-010
+- Confidence: high for the symbol, event-to-method-pointer, and direct-call relationships; no runtime-ordering confidence
+- Relevance: removes this specifically named handler from the leading presentation-completion candidates while leaving other KPP modules and the stock presenter unresolved.
+- Evidence: `registerScreenSaverListener()` registers both powerd `goingToScreenSaver` and `outOfScreenSaver` with the same `ApplicationModule::screenSaverHandler()` method pointer; it separately maps `readyToSuspend` to `ApplicationModule::deviceSuspendHandler(int)`. `screenSaverHandler()` toggles an object-local byte, records/accumulates elapsed system-clock time, and calls `ApplicationModule::emitDeviceEngagementMetrics(..., bool)`.
+- Verification limits: this finding applies to the named `ApplicationModule` handler, not all KPPMainApp screensaver-related classes. It does not exclude another KPP module from choosing content or notifying observers, and it does not identify blanket, Awesome, Pillow, the framebuffer writer, or the panel-refresh owner.
+
+## FACT-023 — The target blanket executable is a loader-driven X11 event-loop launcher
+
+- Classification: FACT
+- Source: OBS-011
+- Repository / commit: NOT APPLICABLE; local static analysis of an owner-supplied target binary
+- Evidence location: target `blanket` dynamic section, dynamic imports, embedded option help, and ARM Thumb main-loop code at virtual addresses `0x1c6c`–`0x2160`, distilled in `docs/research/DISPLAY_PATH_ATTRIBUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only analysis of the copied, stripped `/usr/sbin/blanket`; SHA-256 recorded in OBS-011
+- Confidence: high for the ELF dependency, option-help, imported-call, and main-loop relationships; no runtime-execution or shared-library implementation confidence
+- Relevance: strengthens blanket as a module host and X11 presentation-path coordinator while moving pixel production and update submission out of the demonstrated launcher code and into an unresolved shared-library/loader boundary.
+- Evidence: the executable directly depends on `libblanket.so.1.0`, X11, Lab126 graphics/window utilities, Cairo, rendering, LIPC, and related libraries. Its embedded help defines `-t loader` as the “Name of loader(s) to initialize with blanket,” allowing a quoted, space-separated value when multiple loaders are supplied. Its option path passes the `-t` argument to `blanket_event_parse_loader`. After `blanket_init`, the main loop polls a named blanket wakeup pipe and the X11 connection, converts pending X events with `blanket_event_enqueue_x11`, and invokes `blanket_event_dispatch`; these `blanket_*` operations are undefined dynamic imports. `libblanket.so.1.0` is their intended provider by high-confidence inference, but exact symbol-provider binding requires that library's export table.
+- Verification limits: the earlier `/proc/<PID>/cmdline` rendering replaced NUL separators with spaces, so it does not establish whether `langpicker` and `blankwindow` were included in one quoted `-t` value or were separate trailing arguments. The launcher has no direct imported framebuffer, `ioctl`, E-Ink-update, Cairo-drawing, or Lab126-graphics call, but that scoped negative finding does not apply to `libblanket.so.1.0`, the `screensaver` loader, another loaded module, or downstream libraries. `DT_NEEDED` dependency presence does not establish a call by the launcher, and an X11 event loop does not prove that blanket creates the screensaver window or owns the panel refresh.
+
+## FACT-024 — Screensaver loader resolution occurs beyond the launcher boundary
+
+- Classification: FACT
+- Source: OBS-012
+- Repository / commit: NOT APPLICABLE for the target binary; pinned-source revisions recorded in OBS-012
+- Evidence location: target `blanket` ARM Thumb caller at virtual addresses `0x1d28`–`0x1e0a`, dynamic relocations, imported-symbol table, and strings, distilled in `docs/research/BLANKET_LOADER_RESOLUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only analysis of the copied, stripped `/usr/sbin/blanket`; SHA-256 recorded in OBS-012
+- Confidence: high for the launcher call and negative import/string scope; no parser-implementation confidence
+- Relevance: identifies the smallest next attribution boundary without broad analysis or a device-side loader experiment.
+- Evidence: the launcher's `-t` option stores the `optarg` pointer and, after successful `blanket_init`, passes it to the undefined dynamic import `blanket_event_parse_loader(blanket_context, t_optarg, 0)`. The launcher does not construct a filename or symbol, search a directory, or directly import `dlopen`, `dlsym`, `g_module_open`, or `g_module_symbol`. It has `DT_NEEDED libblanket.so.1.0`, no `DT_RPATH`/`DT_RUNPATH`, and no embedded absolute path for that SONAME.
+- Verification limits: the parser's token storage and resolution mechanism are not present in the launcher. At this observation boundary, the `libgmodule-2.0.so.0` dependency was consistent with but did not prove shared-library plugin loading. FACT-026 later resolves that uncertainty using the supplied library.
+
+## FACT-025 — The target `libblanket.so.1.0` is at `/usr/lib/libblanket.so.1.0`
+
+- Classification: FACT
+- Source: OBS-013
+- Repository / commit: NOT APPLICABLE; direct target-device pathname metadata
+- Evidence location: owner-supplied exact-path `ls -l` and `readlink -f` output, distilled in `docs/research/BLANKET_LOADER_RESOLUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: Véra/KPM; read-only exact-path metadata query
+- Confidence: high for the observed pathname, regular-file mode, owner/group, size, and canonical-path result
+- Relevance: identifies the exact next proprietary artifact without a broad filesystem search.
+- Evidence: `/usr/lib/libblanket.so.1.0` was reported as a root-owned regular executable file with mode `0755` and size 76,160 bytes. `readlink -f /usr/lib/libblanket.so.1.0` returned `/usr/lib/libblanket.so.1.0`.
+- Verification limits: this does not establish a content hash, whether the file was the exact runtime provider in a particular process instance, its exports, or whether it resolves `screensaver` internally versus through another module.
+
+## FACT-026 — Blanket resolves `screensaver` through a shared-object module boundary
+
+- Classification: FACT
+- Source: OBS-014
+- Repository / commit: NOT APPLICABLE; offline analysis of an owner-supplied target library
+- Evidence location: `docs/research/BLANKET_LOADER_RESOLUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only analysis of copied `/usr/lib/libblanket.so.1.0`; SHA-256 recorded in OBS-014
+- Confidence: high for parser queuing, fixed directory/filename resolution, `dlopen`/`dlsym`, module ABI, and common-library helper capability; no confidence that the unsupplied plugin uses a specific display helper
+- Relevance: identifies the narrowest current candidate stock presentation module without altering powerd, blanket, the framebuffer, or the target.
+- Evidence: `blanket_event_parse_loader` tokenizes and enqueues loader requests; the loader handler calls load/unload routines. The load path opens `/usr/lib/blanket`, converts a loader name to `%s.so`, builds `%s/%s`, calls `dlopen`, and resolves `init`, `deinit`, `lipcCallbacks`, `lipcCallbackNum`, `x11Callback`, and `kiwiCallback`. Thus the established `screensaver` token maps to the exact candidate path `/usr/lib/blanket/screensaver.so`. The common library separately contains demonstrated screensaver-window naming, X11 window creation/map/unmap, Cairo, `/dev/fb0`, and `ioctl` paths.
+- Verification limits: at OBS-014, existence and content of the exact plugin remained unobserved. FACT-027 later confirms its installed symlink and canonical path. Common-library capability still does not establish that the plugin creates the visible window, writes framebuffer pixels, submits an E-Ink refresh, or is safe to skip/unload.
+
+## FACT-027 — The blanket `screensaver` plugin resolves to `screensaver.so.1.0`
+
+- Classification: FACT
+- Source: OBS-015
+- Repository / commit: NOT APPLICABLE; direct target-device pathname metadata
+- Evidence location: owner-supplied exact-path `ls -l` and `readlink -f` output, distilled in `docs/research/BLANKET_LOADER_RESOLUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: Véra/KPM; read-only exact-path metadata query
+- Confidence: high for the observed symlink and canonical target
+- Relevance: identifies the precise stock plugin artifact to inspect without broad target filesystem enumeration or executing the module.
+- Evidence: `/usr/lib/blanket/screensaver.so` is a root-owned symbolic link whose relative target is `screensaver.so.1.0`; `readlink -f` resolved it to `/usr/lib/blanket/screensaver.so.1.0`.
+- Verification limits: pathname metadata does not establish the canonical target's file size, hash, ELF identity, exported callback implementation, display operations, runtime behavior, or safety as an intervention boundary.
+
+## FACT-028 — The blanket `screensaver` plugin renders content and presents an X11 screensaver window
+
+- Classification: FACT
+- Source: OBS-016
+- Repository / commit: NOT APPLICABLE; offline analysis of an owner-supplied target plugin
+- Evidence location: `docs/research/BLANKET_LOADER_RESOLUTION.md`
+- Kindle model / firmware: UI-identified Kindle Scribe, generation UNKNOWN / 5.19.5
+- Environment: local read-only analysis of copied `/usr/lib/blanket/screensaver.so.1.0`; SHA-256 recorded in OBS-016
+- Confidence: high for the exported ABI, callback table, event-to-presentation control flow, X11/Cairo rendering, and map/unmap actions; no panel-update-submitter confidence
+- Relevance: identifies the narrowest demonstrated stock sleep-screen content/window presentation boundary while preserving the distinction between X11 presentation and E-Ink refresh ownership.
+- Evidence: the plugin exports the six symbols required by `libblanket`: `init`, `deinit`, `lipcCallbacks`, `lipcCallbackNum`, `x11Callback`, and `kiwiCallback`; `lipcCallbackNum` is 13. Its callback table subscribes to `com.lab126.powerd` events `goingToScreenSaver`, `outOfScreenSaver`, `exitingScreenSaver`, `userShutdown`, and `outOfShutdown`, plus corresponding HAL/authenticator/test sources and a household profile-switch event. `init` obtains the `blanket_screensaver` window through `blanket_image_get_window` and creates a Cairo Xlib surface/context. The `goingToScreenSaver` path reaches prerender/render logic and `blanket_image_window_bringup`; exit-side paths reach `blanket_image_window_teardown`. Embedded function names and directly reached imports show default-screensaver and book-cover preparation/rendering.
+- Verification limits: the plugin does not directly import `ioctl`, a framebuffer/HWTCON/MXCFB interface, or an E-Ink update API. It delegates window and image operations to `libblanket`, Cairo, X11, and window-manager utilities. It also contains LIPC event/property, file-open/write, and `/var/local/blanket/screensaver` state paths, so it must not be treated as a side-effect-free window toggle. Static analysis attributes content preparation and X11 window presentation, not physical panel-refresh submission, runtime event ordering in a particular trial, or safety of unloading/skipping the module.
