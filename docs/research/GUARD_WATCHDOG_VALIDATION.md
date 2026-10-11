@@ -255,10 +255,12 @@ log under `/mnt/us`. The audited binary has no X property mutation symbol.
   different machine by mistake. A fresh target D-Bus-owner check remains a
   precondition of any future mutation.
 
-The target no-write runtime gate is complete. Real HIDE remains unauthorized.
-Before requesting that separate authorization, build, audit, and hash-pin the
-distinct write-enabled artifact and review the exact Phase 4A invocation,
-rollback, and cleanup.
+The target no-write runtime gate is complete. A subsequent separately
+authorized awake-only transaction used an owner-reported audited/hash-matched
+write-enabled artifact and passed exact HIDE application, saved-original
+restoration, expiry-side no-op, and child-exit checks. That Phase 4C result is
+recorded in FACT-039 and does not authorize or establish screensaver/suspend
+behavior.
 
 ## Remaining failure modes
 

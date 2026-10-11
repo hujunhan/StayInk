@@ -245,8 +245,11 @@ lipc-wait-event -m -s 0 -t com.lab126.powerd \
 It is subscription-only under the already-reviewed Phase 2B semantics. It
 writes only its log under the run directory. It must be detached from the SSH
 session, have no terminal, and be supervised as an experiment child—not a
-daemon or startup service. The watchdog terminates only this owned observer
-after restoration or at its final deadline.
+daemon or startup service. The implemented guard/watchdog does not own or
+terminate this separate LIPC observer. Therefore the full sleep/wake trial
+must not begin until the observer has its own reviewed bounded lifetime and
+exact post-wake cleanup, or equivalent event evidence is obtained without a
+long-lived observer.
 
 Observer effects remain confounders: one LIPC subscriber, the guard/watchdog
 process, user-storage log writes, and any active SSH/networking can affect
@@ -394,8 +397,8 @@ The watchdog is a detached, one-shot child prepared before mutation. It:
 - holds no wake lock and uses no `_ALARM` clock, RTC, or wake injection;
 - at expiry, opens a fresh X connection and runs the exact guarded restore;
 - if the title is already original, performs no write;
-- exits after logging restore/no-op/failure and terminating only its owned event
-  observer.
+- exits after logging restore/no-op/failure. It does not currently terminate
+  the separately launched event observer.
 
 `CLOCK_BOOTTIME` includes time spent suspended, unlike the previously observed
 `/bin/sleep` behavior. A normal timerfd cannot execute userspace code while the
@@ -495,32 +498,55 @@ Abort without changing `WM_NAME` if any of these occurs:
 - any Amazon service would need to be stopped/restarted or any persistent hook
   would be required.
 
-## Authorization recommendation
+## Executed Phase 4A result — 2026-08-16
+
+The separately authorized first trial completed on the observed Scribe / 5.19.5.
+The temporary run-local observer supplied the independently bounded lifecycle
+missing from the generic guard: it detached successfully, was stopped by an
+identity-checked SIGINT after wake, recorded `manual-after-wake`, and left its
+three recorded PIDs gone. The guard watchdog also exited and left ORIGINAL.
+
+**FACT:** The pre-sleep readback showed the exact HIDE-tagged title on unmapped
+XID `0x400001`. The owner reports that the Notebook page remained visible,
+stock screensaver content did not appear, no black/white flash occurred, and
+normal UI returned on wake. Powerd events retained the expected order, suspend
+success incremented 98 to 99 without failures, and the kernel recorded a
+complete `mem` transaction with 155.230 seconds suspended.
+
+**INFERENCE:** HIDE is the cause of suppressed stock presentation in this trial.
+The strongest within-device support is that, after ORIGINAL was restored, a
+later intentional sleep press displayed the stock screensaver again.
+
+**UNKNOWN:** The later reversal was not another full suspend control, and
+several additional short post-wake screensaver event episodes are not fully
+explained. Repeatability, hidden-window Expose behavior, longer sleeps, other
+wake paths, and production integration remain unknown.
+
+The initial live transcript displayed `APPLIED` and direct `xwininfo` proved
+HIDE before sleep. Later `apply.out`/`apply.err` contents were overwritten and
+instead contain a safe exclusive-file refusal; they cannot stand alone as the
+initial APPLY record. The final title, layer, powerd state, watchdog log, and
+process cleanup were all verified safe. Preserve the run directory and do not
+repeat the experiment unchanged.
+
+## Post-trial recommendation
 
 The experiment is conceptually bounded to one property and has a credible
 rollback architecture. The read-only target evidence is sufficient to finish
 this design.
 
-Execution remains **unauthorized**. Phase 4B now provides reviewed source,
-passing host-core tests, and passing ordinary and detached-watchdog no-write
-target runs. Those target runs establish exact runtime identity/property
-validation, target `CLOCK_BOOTTIME` timerfd support, detached expiry-side
-reconnection, refusal to restore ORIGINAL, clean child exit, and an unchanged
-title. The owner subsequently reported that the transferred ARM no-write
-artifact passed its symbol audit and host/target hash comparison, although the
-exact hash was not supplied for this corpus. No distinct write-enabled
-artifact has been audited or hash-pinned. Using `wmctrl` as a shortcut would
-broaden or obscure the mutation and does not satisfy this design.
+The first full sleep/wake experiment was separately authorized and has now
+completed as recorded above and in FACT-040. No repeat or broader deployment is
+authorized by that result. The run-specific observer closed its lifecycle gap
+for this trial; the generic guard still does not own an observer.
 
-Authorization may be reconsidered only after the remaining Phase 4B review
-shows that the helper:
+Further work should first review the preserved evidence and choose one new
+uncertainty. Using `wmctrl`, broadening the property mutation, adding persistent
+startup behavior, or treating one success as production validation remains
+outside the evidence.
 
-- contains no operation beyond exact reads, one guarded `WM_NAME` replacement,
-  its exact inverse, logs, and its owned timer/child cleanup;
-- preserves the already-passing host mismatch/compare-before-write tests and
-  passes disposable-X restore tests;
-- retains the passing target no-write dry-run and awake-only detached-watchdog
-  evidence;
-- preserves the recorded result that no watchdog process remained;
-- has exact manual invocation, rollback, and cleanup commands reviewed before
-  the title-changing trial.
+Any next state-changing trial requires a new question, one changed variable,
+the same exact-identity/compare-before-write protections, bounded observer and
+watchdog cleanup, independent suspend evidence, and a separately reviewed
+authorization. The unexplained post-wake event episodes must be considered in
+that review rather than silently treated as normal.

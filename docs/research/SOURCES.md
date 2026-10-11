@@ -394,3 +394,16 @@ Repository evidence is pinned to a full commit SHA. Web and issue evidence is mu
 - License: NOT APPLICABLE to the owner-supplied observation
 - Relevance: directly confirms the candidate's title, addressability, map state, geometry, visual, WM hints, reported PID, and the correlated awake winmgr screensaver-layer getter value.
 - Limitations: the XID may change after plugin/process recreation. The prior PID-to-executable mapping was not repeated in this observation. Getter correlation does not establish formal semantics, mapped behavior, causality, physical presentation, suspend equivalence, or wake restoration.
+
+## OBS-024 — Phase 4A guarded HIDE sleep/wake trial
+
+- Source: direct target-device output and visual observations supplied by the device owner
+- Repository / commit: NOT APPLICABLE
+- Observed: 2026-08-16 UTC
+- Device / firmware: UI-identified Kindle Scribe, generation and physical model number UNKNOWN / 5.19.5
+- Environment: current Véra/KPM environment with stock Notebook foreground; not a proven pure-stock boot
+- Intervention: one guarded replacement of the verified stock screensaver window's `WM_NAME` with the exact HIDE-tagged value; no powerd, service, framebuffer, display-driver, kernel-power, or persistent-startup modification
+- Evidence location: owner-supplied transcript; target run directory `/mnt/us/stayink-observation/phase4a-hide-suspend-20260816T102655Z`; distilled in `docs/research/HIDE_METADATA_EXPERIMENT.md` and FACT-040
+- License: NOT APPLICABLE to owner-supplied observations or StayInk's Apache-2.0 guard; stock binary licenses remain UNKNOWN
+- Relevance: directly tests whether the HIDE-tagged stock presenter can leave the Notebook image visible while the ordinary powerd sequence reaches genuine kernel `mem` suspend and normal physical wake.
+- Limitations: the phone video itself was not supplied. The visual result is owner-reported. Later contents of `apply.out`/`apply.err` conflict with the live transcript because the files were overwritten after the initially displayed `APPLIED` result; direct pre-sleep `xwininfo` nevertheless proves that exact HIDE was active. The manual RESTORE result line was not supplied, although final raw-title validation and the watchdog's expiry-side `NO_WRITE current=ORIGINAL` establish that ORIGINAL was restored. Several short additional screensaver event episodes followed the controlled wake; the owner reports intentionally pressing sleep again after restoration and seeing the stock screensaver, but the remaining extra episodes and actions are not fully reconstructed. That later reversal was not another controlled suspend trial.
